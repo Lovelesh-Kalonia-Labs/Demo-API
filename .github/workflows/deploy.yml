@@ -1,0 +1,79 @@
+name: MuleSoft Deployment
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    environment: ${{ startsWith(github.ref, 'refs/tags/') && 'PRODUCTION' || 'SANDBOX' }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Install CLI
+        run: npm install -g anypoint-cli-v4
+
+      - name: Configure Environment
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "ENVIRONMENT=PRODUCTION" >> $GITHUB_ENV
+            echo "CONFIG_FILE=anypoint-info/PRODUCTION.json" >> $GITHUB_ENV
+          else
+            echo "ENVIRONMENT=SANDBOX" >> $GITHUB_ENV
+            echo "CONFIG_FILE=anypoint-info/SANDBOX.json" >> $GITHUB_ENV
+          fi
+
+      - name: Login
+        run: |
+          anypoint-cli-v4 account:environment:list \
+            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+
+      - name: Create API Manager Instance
+        run: bash scripts/apimanager.sh
+
+      - name: Apply Policies
+        run: bash scripts/policies.sh
+
+      - name: Create SLA Tier
+        run: bash scripts/sla.sh
+
+      - name: Deploy CloudHub 2.0
+        run: |
+          APP_NAME=$(bash -c '
+            source scripts/common.sh
+            generate_app_name
+          ')
+
+          REPLICAS=$(jq -r '.deployment.replicas' "$CONFIG_FILE")
+          VCORES=$(jq -r '.deployment.vCores' "$CONFIG_FILE")
+          TARGET=$(jq -r '.deployment.target' "$CONFIG_FILE")
+          PUBLIC_URL=$(jq -r '.deployment.publicUrl' "$CONFIG_FILE")
+
+          mvn clean deploy -DmuleDeploy \
+            -DenvName=$ENVIRONMENT \
+            -DapplicationName=$APP_NAME \
+            -Dreplicas=$REPLICAS \
+            -DvCores=$VCORES \
+            -Dtarget=$TARGET \
+            -DpublicUrl=$PUBLIC_URL \
+            -DapiId=$API_INSTANCE_ID \
+            -DconnectedAppClientId=${{ secrets.CONNECTED_APP_ID }} \
+            -DconnectedAppClientSecret=${{ secrets.CONNECTED_APP_SECRET }}

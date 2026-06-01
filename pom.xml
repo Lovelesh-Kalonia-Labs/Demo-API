@@ -35,8 +35,31 @@
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
+
 				<configuration>
-					<classifier>mule-application</classifier>
+					<cloudhub2Deployment>
+						<uri>https://anypoint.mulesoft.com</uri>
+						<provider>MC</provider>
+						<environment>${envName}</environment>
+						<target>${target}</target>
+						<muleVersion>${muleVersion}</muleVersion>
+						<applicationName>${applicationName}</applicationName>
+						<replicas>${replicas}</replicas>
+						<vCores>${vCores}</vCores>
+						<deploymentSettings>
+							<http>
+								<inbound>
+									<publicUrl>${applicationName}</publicUrl>
+								</inbound>
+							</http>
+						</deploymentSettings>
+						<properties>
+							<api.id>${apiId}</api.id>
+						</properties>
+						<connectedAppClientId>${connectedAppClientId}</connectedAppClientId>
+						<connectedAppClientSecret>${connectedAppClientSecret}</connectedAppClientSecret>
+						<connectedAppGrantType>client_credentials</connectedAppGrantType>
+					</cloudhub2Deployment>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -64,17 +87,17 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<distributionManagement>
-	    <repository>
-	        <id>anypoint-exchange-v3</id>
-	        <name>Anypoint Exchange</name>
-	        <url>
+		<repository>
+			<id>anypoint-exchange-v3</id>
+			<name>Anypoint Exchange</name>
+			<url>
 	            https://maven.anypoint.mulesoft.com/api/v3/organizations/${project.groupId}/maven
 	        </url>
-	    </repository>
+		</repository>
 	</distributionManagement>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>7d88f903-949c-478a-a8b4-47e914af48b0</groupId>

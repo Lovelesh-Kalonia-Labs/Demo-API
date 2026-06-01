@@ -1,0 +1,35 @@
+{
+  "exchangeApi": {
+    "groupId": "7d88f903-949c-478a-a8b4-47e914af48b0",
+    "assetId": "demo-api-raml-spec",
+    "version": "1.0.0",
+    "classifier": "raml",
+    "apiVersion": "v1"
+  },
+  "deployment": {
+    "replicas": 1,
+    "vCores": 0.1,
+    "target": "cloudhub-us-east-2",
+    "publicUrl": "demo-api"
+  },
+  "apiManager": {
+    "instanceLabelTemplate": "${ENV}-${APP_NAME}-${API_VERSION}"
+  },
+  "policies": [
+    {
+      "name": "client-id-enforcement"
+    }
+  ],
+  "sla": {
+    "name": "Default SLA",
+    "description": "Default SLA created by CI/CD pipeline to prevent automatic approval of client applications.",
+    "autoApprove": false,
+    "limits": [
+      {
+        "visible": true,
+        "maximumRequests": 1000,
+        "timeUnit": "sec"
+      }
+    ]
+  }
+}
