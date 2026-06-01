@@ -26,7 +26,7 @@ VERSION=$(get_project_version)
 
 ARTIFACT_ID=$(get_artifact_id)
 
-echo "${ENVIRONMENT}-${ARTIFACT_ID}-${VERSION}" 
-| tr '[:upper:]' '[:lower:]' 
+echo "${ENVIRONMENT}-${ARTIFACT_ID}-${VERSION}" \
+| tr '[:upper:]' '[:lower:]' \
 | sed 's/[^a-z0-9-]/-/g'
 }
