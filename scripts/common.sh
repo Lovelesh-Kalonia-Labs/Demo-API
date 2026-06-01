@@ -7,17 +7,11 @@ jq -r "$1" "$CONFIG_FILE"
 }
 
 get_project_version() {
-mvn help:evaluate 
--Dexpression=project.version 
--q 
--DforceStdout
+mvn help:evaluate -Dexpression=project.version -q -DforceStdout
 }
 
 get_artifact_id() {
-mvn help:evaluate 
--Dexpression=project.artifactId 
--q 
--DforceStdout
+mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout
 }
 
 generate_app_name() {
