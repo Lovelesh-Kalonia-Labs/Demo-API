@@ -12,9 +12,6 @@
     "target": "cloudhub-us-east-2",
     "publicUrl": "demo-api"
   },
-  "apiManager": {
-    "instanceLabelTemplate": "${ENV}-${APP_NAME}-${API_VERSION}"
-  },
   "policies": [
     {
       "name": "client-id-enforcement"

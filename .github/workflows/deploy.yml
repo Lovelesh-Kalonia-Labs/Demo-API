@@ -63,45 +63,6 @@ jobs:
           </settings>
           EOF
 
-      # - name: Debug
-      #   run: |
-      #     echo "CONFIG_FILE=$CONFIG_FILE"
-
-      #     if [ ! -f "$CONFIG_FILE" ]; then
-      #       echo "File not found!"
-      #       exit 1
-      #     fi
-
-      #     cat "$CONFIG_FILE"
-
-      #     ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
-
-      #     echo "ASSET_ID=$ASSET_ID"
-
-      #     ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
-
-      #     echo "ASSET_VERSION = $ASSET_VERSION"
-
-      #     API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
-
-      #     echo "API_VERSION = $API_VERSION"
-
-      #     mvn help:evaluate -s settings.xml -Dexpression=project.artifactId
-
-      #     # ARTIFACT_ID=$(mvn help:evaluate -s settings.xml -Dexpression=project.artifactId -DforceStdout)
-
-      #     echo "ARTIFACT_ID = $ARTIFACT_ID"
-
-      #     INSTANCE_TEMPLATE=$(jq -r '.apiManager.instanceLabelTemplate' "$CONFIG_FILE")
-
-      #     echo "INSTANCE_TEMPLATE = $INSTANCE_TEMPLATE"
-
-      #     INSTANCE_LABEL=${INSTANCE_TEMPLATE//\$\{ENV\}/$ENVIRONMENT}
-      #     INSTANCE_LABEL=${INSTANCE_LABEL//\$\{APP_NAME\}/$ARTIFACT_ID}
-      #     INSTANCE_LABEL=${INSTANCE_LABEL//\$\{API_VERSION\}/$API_VERSION}
-
-      #     echo "INSTANCE_LABEL = $INSTANCE_LABEL"
-
       - name: Create API Manager Instance
         run: |
 
@@ -124,20 +85,16 @@ jobs:
           echo "ARTIFACT_ID=$ARTIFACT_ID"
           echo "VERSION=$VERSION"
 
-          INSTANCE_TEMPLATE=$(jq -r '.apiManager.instanceLabelTemplate' "$CONFIG_FILE")
-
-          INSTANCE_LABEL=${INSTANCE_TEMPLATE//${ENV}/$ENVIRONMENT}
-          INSTANCE_LABEL=${INSTANCE_LABEL//${APP_NAME}/$ARTIFACT_ID}
-          INSTANCE_LABEL=${INSTANCE_LABEL//${API_VERSION}/$API_VERSION}
+          INSTANCE_LABEL="${ENVIRONMENT}-${ARTIFACT_ID}-${API_VERSION}"
 
           echo "INSTANCE_LABEL=$INSTANCE_LABEL"
 
           echo "Listing existing API instances..."
 
-          anypoint-cli-v4 api-mgr:api:list 
-          --client_id "${{ secrets.CONNECTED_APP_ID }}" 
-          --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" 
-          --output json > apis.json
+          anypoint-cli-v4 api-mgr:api:list \
+            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+            --output json > apis.json
 
           cat apis.json
 
