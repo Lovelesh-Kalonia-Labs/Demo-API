@@ -27,6 +27,9 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
 
+      - name: Install XML Tools
+        run: sudo apt-get install -y libxml2-utils
+
       - name: Install CLI
         run: npm install -g anypoint-cli-v4
 
@@ -40,7 +43,7 @@ jobs:
             echo "CONFIG_FILE=anypoint-info/SANDBOX.json" >> $GITHUB_ENV
           fi
 
-      - name: Login
+      - name: CLI Login
         run: |
           anypoint-cli-v4 account:environment:list \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
@@ -60,87 +63,122 @@ jobs:
           </settings>
           EOF
 
-      - name: Debug
-        run: |
-          echo "CONFIG_FILE=$CONFIG_FILE"
+      # - name: Debug
+      #   run: |
+      #     echo "CONFIG_FILE=$CONFIG_FILE"
 
-          if [ ! -f "$CONFIG_FILE" ]; then
-            echo "File not found!"
-            exit 1
-          fi
+      #     if [ ! -f "$CONFIG_FILE" ]; then
+      #       echo "File not found!"
+      #       exit 1
+      #     fi
 
-          cat "$CONFIG_FILE"
+      #     cat "$CONFIG_FILE"
 
-          ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
+      #     ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
 
-          echo "ASSET_ID=$ASSET_ID"
+      #     echo "ASSET_ID=$ASSET_ID"
 
-          ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
+      #     ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
 
-          echo "ASSET_VERSION = $ASSET_VERSION"
+      #     echo "ASSET_VERSION = $ASSET_VERSION"
 
-          API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
+      #     API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
 
-          echo "API_VERSION = $API_VERSION"
+      #     echo "API_VERSION = $API_VERSION"
 
-          mvn help:evaluate -s settings.xml -Dexpression=project.artifactId
+      #     mvn help:evaluate -s settings.xml -Dexpression=project.artifactId
 
-          # ARTIFACT_ID=$(mvn help:evaluate -s settings.xml -Dexpression=project.artifactId -DforceStdout)
+      #     # ARTIFACT_ID=$(mvn help:evaluate -s settings.xml -Dexpression=project.artifactId -DforceStdout)
 
-          echo "ARTIFACT_ID = $ARTIFACT_ID"
+      #     echo "ARTIFACT_ID = $ARTIFACT_ID"
 
-          INSTANCE_TEMPLATE=$(jq -r '.apiManager.instanceLabelTemplate' "$CONFIG_FILE")
+      #     INSTANCE_TEMPLATE=$(jq -r '.apiManager.instanceLabelTemplate' "$CONFIG_FILE")
 
-          echo "INSTANCE_TEMPLATE = $INSTANCE_TEMPLATE"
+      #     echo "INSTANCE_TEMPLATE = $INSTANCE_TEMPLATE"
 
-          INSTANCE_LABEL=${INSTANCE_TEMPLATE//\$\{ENV\}/$ENVIRONMENT}
-          INSTANCE_LABEL=${INSTANCE_LABEL//\$\{APP_NAME\}/$ARTIFACT_ID}
-          INSTANCE_LABEL=${INSTANCE_LABEL//\$\{API_VERSION\}/$API_VERSION}
+      #     INSTANCE_LABEL=${INSTANCE_TEMPLATE//\$\{ENV\}/$ENVIRONMENT}
+      #     INSTANCE_LABEL=${INSTANCE_LABEL//\$\{APP_NAME\}/$ARTIFACT_ID}
+      #     INSTANCE_LABEL=${INSTANCE_LABEL//\$\{API_VERSION\}/$API_VERSION}
 
-          echo "INSTANCE_LABEL = $INSTANCE_LABEL"
+      #     echo "INSTANCE_LABEL = $INSTANCE_LABEL"
 
       - name: Create API Manager Instance
         run: |
+
+          set -ex
+
+          echo "Reading configuration..."
+
           ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
           ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
           API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
 
-          ARTIFACT_ID=$(mvn help:evaluate \
-            -Dexpression=project.artifactId \
-            -q \
-            -DforceStdout)
+          echo "ASSET_ID=$ASSET_ID"
+          echo "ASSET_VERSION=$ASSET_VERSION"
+          echo "API_VERSION=$API_VERSION"
+
+          ARTIFACT_ID=$(xmllint --xpath 
+          "/*[local-name()='project']/*[local-name()='artifactId']/text()" 
+          pom.xml)
+
+          VERSION=$(xmllint --xpath 
+          "/*[local-name()='project']/*[local-name()='version']/text()" 
+          pom.xml)
+
+          echo "ARTIFACT_ID=$ARTIFACT_ID"
+          echo "VERSION=$VERSION"
 
           INSTANCE_TEMPLATE=$(jq -r '.apiManager.instanceLabelTemplate' "$CONFIG_FILE")
 
-          INSTANCE_LABEL=${INSTANCE_TEMPLATE//\$\{ENV\}/$ENVIRONMENT}
-          INSTANCE_LABEL=${INSTANCE_LABEL//\$\{APP_NAME\}/$ARTIFACT_ID}
-          INSTANCE_LABEL=${INSTANCE_LABEL//\$\{API_VERSION\}/$API_VERSION}
+          INSTANCE_LABEL=${INSTANCE_TEMPLATE//${ENV}/$ENVIRONMENT}
+          INSTANCE_LABEL=${INSTANCE_LABEL//${APP_NAME}/$ARTIFACT_ID}
+          INSTANCE_LABEL=${INSTANCE_LABEL//${API_VERSION}/$API_VERSION}
 
-          echo "Searching API Instance..."
+          echo "INSTANCE_LABEL=$INSTANCE_LABEL"
 
-          API_INSTANCE_ID=$(anypoint-cli-v4 api-mgr:api:list \
-            --output json \
-            | jq -r ".[] | select(.assetId==\"$ASSET_ID\") | .id" \
-            | head -1)
+          echo "Listing existing API instances..."
 
-          if [ -z "$API_INSTANCE_ID" ]; then
+          anypoint-cli-v4 api-mgr:api:list 
+          --client_id "${{ secrets.CONNECTED_APP_ID }}" 
+          --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" 
+          --output json > apis.json
 
-            echo "Creating API Manager Instance..."
+          cat apis.json
 
-            anypoint-cli-v4 api-mgr:api:manage \
-              "$ASSET_ID" \
-              "$ASSET_VERSION" \
-              --muleVersion4OrAbove \
-              --apiInstanceLabel "$INSTANCE_LABEL"
+          API_INSTANCE_ID=$(jq -r 
+          ".[] | select(.assetId=="$ASSET_ID") | .id" 
+          apis.json | head -1)
 
-            sleep 15
+          echo "FOUND API_INSTANCE_ID=$API_INSTANCE_ID"
 
-            API_INSTANCE_ID=$(anypoint-cli-v4 api-mgr:api:list \
-              --output json \
-              | jq -r ".[] | select(.assetId==\"$ASSET_ID\") | .id" \
-              | head -1)
+          if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
+
+          ```
+          echo "Creating API Manager Instance..."
+
+          anypoint-cli-v4 api-mgr:api:manage \
+            "$ASSET_ID" \
+            "$ASSET_VERSION" \
+            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+            --muleVersion4OrAbove \
+            --apiInstanceLabel "$INSTANCE_LABEL"
+
+          sleep 15
+
+          anypoint-cli-v4 api-mgr:api:list \
+            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+            --output json > apis.json
+
+          API_INSTANCE_ID=$(jq -r \
+            ".[] | select(.assetId==\"$ASSET_ID\") | .id" \
+            apis.json | head -1)
+          ```
 
           fi
+
+          echo "API_INSTANCE_ID=$API_INSTANCE_ID"
 
           echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
 
