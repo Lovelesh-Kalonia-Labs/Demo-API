@@ -47,7 +47,50 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
 
       - name: Create API Manager Instance
-        run: bash scripts/apimanager.sh
+        run: |
+
+          ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
+          ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
+          API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
+
+          ARTIFACT_ID=$(mvn help:evaluate \
+            -Dexpression=project.artifactId \
+            -q \
+            -DforceStdout)
+
+          INSTANCE_TEMPLATE=$(jq -r '.apiManager.instanceLabelTemplate' "$CONFIG_FILE")
+
+          INSTANCE_LABEL=${INSTANCE_TEMPLATE//\$\{ENV\}/$ENVIRONMENT}
+          INSTANCE_LABEL=${INSTANCE_LABEL//\$\{APP_NAME\}/$ARTIFACT_ID}
+          INSTANCE_LABEL=${INSTANCE_LABEL//\$\{API_VERSION\}/$API_VERSION}
+
+          echo "Searching API Instance..."
+
+          API_INSTANCE_ID=$(anypoint-cli-v4 api-mgr:api:list \
+            --output json \
+            | jq -r ".[] | select(.assetId==\"$ASSET_ID\") | .id" \
+            | head -1)
+
+          if [ -z "$API_INSTANCE_ID" ]; then
+
+            echo "Creating API Manager Instance..."
+
+            anypoint-cli-v4 api-mgr:api:manage \
+              "$ASSET_ID" \
+              "$ASSET_VERSION" \
+              --muleVersion4OrAbove \
+              --apiInstanceLabel "$INSTANCE_LABEL"
+
+            sleep 15
+
+            API_INSTANCE_ID=$(anypoint-cli-v4 api-mgr:api:list \
+              --output json \
+              | jq -r ".[] | select(.assetId==\"$ASSET_ID\") | .id" \
+              | head -1)
+
+          fi
+
+          echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
 
       - name: Apply Policies
         run: bash scripts/policies.sh
