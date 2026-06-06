@@ -45,6 +45,20 @@ jobs:
           anypoint-cli-v4 account:environment:list \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+      
+      - name: Create Maven Settings
+        run: |
+          cat > settings.xml << EOF
+          <settings>
+            <servers>
+              <server>
+                <id>anypoint-exchange-v3</id>
+                <username>~~~Client~~~</username>
+                <password>${{ secrets.CONNECTED_APP_ID }}~?~${{ secrets.CONNECTED_APP_SECRET }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
 
       - name: Debug
         run: |
@@ -69,7 +83,7 @@ jobs:
 
           echo "API_VERSION = $API_VERSION"
 
-          ARTIFACT_ID=$(mvn help:evaluate -Dexpression=project.artifactId -DforceStdout)
+          ARTIFACT_ID=$(mvn help:evaluate -s settings.xml -Dexpression=project.artifactId -DforceStdout)
 
           echo "ARTIFACT_ID = $ARTIFACT_ID"
 
