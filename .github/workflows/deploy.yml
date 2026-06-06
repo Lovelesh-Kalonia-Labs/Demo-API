@@ -83,7 +83,9 @@ jobs:
 
           echo "API_VERSION = $API_VERSION"
 
-          ARTIFACT_ID=$(mvn help:evaluate -s settings.xml -Dexpression=project.artifactId -DforceStdout)
+          mvn help:evaluate -s settings.xml -Dexpression=project.artifactId
+
+          # ARTIFACT_ID=$(mvn help:evaluate -s settings.xml -Dexpression=project.artifactId -DforceStdout)
 
           echo "ARTIFACT_ID = $ARTIFACT_ID"
 
