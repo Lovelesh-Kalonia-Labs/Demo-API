@@ -117,13 +117,9 @@ jobs:
           echo "ASSET_VERSION=$ASSET_VERSION"
           echo "API_VERSION=$API_VERSION"
 
-          ARTIFACT_ID=$(xmllint --xpath 
-          "/*[local-name()='project']/*[local-name()='artifactId']/text()" 
-          pom.xml)
+          ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
 
-          VERSION=$(xmllint --xpath 
-          "/*[local-name()='project']/*[local-name()='version']/text()" 
-          pom.xml)
+          VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
 
           echo "ARTIFACT_ID=$ARTIFACT_ID"
           echo "VERSION=$VERSION"
