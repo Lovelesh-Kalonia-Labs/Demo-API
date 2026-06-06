@@ -46,9 +46,23 @@ jobs:
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
 
+      - name: Debug
+        run: |
+          echo "CONFIG_FILE=$CONFIG_FILE"
+
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "File not found!"
+            exit 1
+          fi
+
+          cat "$CONFIG_FILE"
+
+          ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
+
+          echo "ASSET_ID=$ASSET_ID"
+
       - name: Create API Manager Instance
         run: |
-
           ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
           ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
           API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
