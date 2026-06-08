@@ -90,7 +90,7 @@ jobs:
             --output json > apis.json
 
           cat apis.json
-          API_INSTANCE_ID=$(jq -r ".[] | select(.assetId=="$ASSET_ID") | .id" apis.json | head -1)
+          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
 
           echo "FOUND API_INSTANCE_ID=$API_INSTANCE_ID"
 
