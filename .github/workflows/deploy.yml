@@ -95,34 +95,35 @@ jobs:
 
           if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
-          echo "Not found. Creating new API Manager Instance..."
+            echo "Not found. Creating new API Manager Instance..."
 
-          anypoint-cli-v4 api-mgr:api:manage \
-            "$ASSET_ID" \
-            "$ASSET_VERSION" \
-            --environment "$ENVIRONMENT" \
-            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-            --muleVersion4OrAbove \
-            --apiInstanceLabel "$INSTANCE_LABEL" \
-            --output json > apicreate.json
+            anypoint-cli-v4 api-mgr:api:manage \
+              "$ASSET_ID" \
+              "$ASSET_VERSION" \
+              --environment "$ENVIRONMENT" \
+              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+              --muleVersion4OrAbove \
+              --apiInstanceLabel "$INSTANCE_LABEL" \
+              --output json > apicreate.json
 
-          # cat apicreate.json # To print the output
-        
-          sleep 1
+            # cat apicreate.json # To print the output
+          
+            sleep 3
 
-          anypoint-cli-v4 api-mgr:api:list \
-            --environment "$ENVIRONMENT" \
-            --instanceLabel "$INSTANCE_LABEL" \
-            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-            --output json > apis.json
+            anypoint-cli-v4 api-mgr:api:list \
+              --environment "$ENVIRONMENT" \
+              --instanceLabel "$INSTANCE_LABEL" \
+              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+              --output json > apis.json
 
-          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
-          echo "Created new API with ID: $API_INSTANCE_ID"
+            API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
+            echo "Created new API with ID: $API_INSTANCE_ID"
 
           else
-          echo "Existing API Manager Instance found with ID: $API_INSTANCE_ID"
+
+            echo "Existing API Manager Instance found with ID: $API_INSTANCE_ID"
           
           fi
 
@@ -137,7 +138,7 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > policystate.json
           
-          echo "Current policies applied to API instance $API_INSTANCE_ID:"
+          echo "List of policies applied to API instance $API_INSTANCE_ID:"
           cat policystate.json # To print the output
 
           jq -c '.policies[]' "$CONFIG_FILE" | while read -r policy
@@ -146,19 +147,23 @@ jobs:
 
             POLICY_NAME=$(echo "$policy" | jq -r '.name')
 
-            echo "Processing policy $POLICY_NAME"
+            echo "Processing policy: $POLICY_NAME"
 
-            POLICY_EXISTS=$(jq -r \
-              --arg policy "$POLICY_NAME" \
-              '.[] | select(.policyTemplateId==$policy) | .id' \
-              policystate.json)
+            POLICY_EXISTS=$(jq -r --arg policy "$POLICY_NAME" '.[] | select(.policyTemplateId==$policy) | .id' policystate.json)
 
             if [ -z "$POLICY_EXISTS" ]; then
 
               anypoint-cli-v4 api-mgr:policy:apply \
                 "$API_INSTANCE_ID" \
-                "$POLICY_NAME"
+                "$POLICY_NAME" \
+                --environment "$ENVIRONMENT" \
+                --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+            
+            else
 
+              echo "Policy $POLICY_NAME already exists on API instance."
+            
             fi
 
           done
