@@ -54,7 +54,7 @@ jobs:
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
 
-      - name: Create API Manager Instance
+      - name: Reuse/Create API Manager Instance
         run: |
 
           echo "Reading configuration..."
@@ -67,14 +67,13 @@ jobs:
           echo "ASSET_VERSION=$ASSET_VERSION"
           echo "API_VERSION=$API_VERSION"
 
-          ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
+          MULE_PROJECT_ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
+          MULE_PROJECT_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
 
-          VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
+          echo "MULE_PROJECT_ARTIFACT_ID=$MULE_PROJECT_ARTIFACT_ID"
+          echo "MULE_PROJECT_VERSION=$MULE_PROJECT_VERSION"
 
-          echo "ARTIFACT_ID=$ARTIFACT_ID"
-          echo "VERSION=$VERSION"
-
-          INSTANCE_LABEL="${ENVIRONMENT}-${ARTIFACT_ID}-${API_VERSION}"
+          INSTANCE_LABEL="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}-${API_VERSION}"
 
           echo "INSTANCE_LABEL=$INSTANCE_LABEL"
 
@@ -89,7 +88,8 @@ jobs:
 
           # cat apis.json # To print the output
 
-          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
+          # Below command will only grab the id of the first one it finds. (It is possible for multiple instances to exist with the same label)
+          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1) 
 
           if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
