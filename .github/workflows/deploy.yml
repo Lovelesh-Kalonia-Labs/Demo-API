@@ -33,7 +33,7 @@ jobs:
       - name: Install CLI
         run: npm install -g anypoint-cli-v4-public
 
-      - name: Configure Environment
+      - name: Configure Anypoint Platform Environment
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             echo "ENVIRONMENT=PRODUCTION" >> $GITHUB_ENV
@@ -42,8 +42,11 @@ jobs:
             echo "ENVIRONMENT=SANDBOX" >> $GITHUB_ENV
             echo "CONFIG_FILE=anypoint-info/SANDBOX.json" >> $GITHUB_ENV
           fi
-          echo "ENVIRONMENT=$ENVIRONMENT"
-          echo "CONFIG_FILE=$CONFIG_FILE"
+
+      - name: Display Selected Anypoint Platform Environment
+        run: |
+          echo "Environment: $ENVIRONMENT"
+          echo "Config File: $CONFIG_FILE"
 
       - name: CLI Login Check
         run: |
