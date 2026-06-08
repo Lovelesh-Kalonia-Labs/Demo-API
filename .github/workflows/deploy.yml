@@ -132,6 +132,7 @@ jobs:
         run: |
           anypoint-cli-v4 api-mgr:policy:list \
             "$API_INSTANCE_ID" \
+            --environment "$ENVIRONMENT" \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > policystate.json
