@@ -42,8 +42,8 @@ jobs:
             echo "ENVIRONMENT=SANDBOX" >> $GITHUB_ENV
             echo "CONFIG_FILE=anypoint-info/SANDBOX.json" >> $GITHUB_ENV
           fi
-          echo "ENVIRONMENT=${ENVIRONMENT}"
-          echo "CONFIG_FILE=${CONFIG_FILE}"
+          echo "ENVIRONMENT=$ENVIRONMENT"
+          echo "CONFIG_FILE=$CONFIG_FILE"
 
       - name: CLI Login Check
         run: |
