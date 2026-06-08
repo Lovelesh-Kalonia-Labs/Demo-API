@@ -78,7 +78,7 @@ jobs:
 
           echo "INSTANCE_LABEL=$INSTANCE_LABEL"
 
-          echo "Listing existing API instances..."
+          echo "Searching for existing API instances..."
 
           anypoint-cli-v4 api-mgr:api:list \
             --environment "$ENVIRONMENT" \
@@ -87,14 +87,13 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > apis.json
 
-          cat apis.json
-          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
+          # cat apis.json # To print the output
 
-          echo "FOUND API_INSTANCE_ID=$API_INSTANCE_ID"
+          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
 
           if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
-          echo "Creating API Manager Instance..."
+          echo "Not found. Creating new API Manager Instance..."
 
           anypoint-cli-v4 api-mgr:api:manage \
             "$ASSET_ID" \
@@ -104,16 +103,20 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --muleVersion4OrAbove \
             --apiInstanceLabel "$INSTANCE_LABEL"
+            --output json > apisnew.json`
 
-          sleep 2
+          cat apisnew.json
+        
+          sleep 1
 
           anypoint-cli-v4 api-mgr:api:list \
             --environment "$ENVIRONMENT" \
+            --instanceLabel "$INSTANCE_LABEL" \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-            --output json > apis.json
+            --output json > apis.json`
 
-          API_INSTANCE_ID=$(jq -r ".[] | select(.assetId==\"$ASSET_ID\") | .id" apis.json | head -1)
+          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
 
           else
           
