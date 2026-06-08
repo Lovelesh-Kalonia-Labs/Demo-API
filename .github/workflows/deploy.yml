@@ -83,21 +83,19 @@ jobs:
           echo "Listing existing API instances..."
 
           anypoint-cli-v4 api-mgr:api:list \
+            --environment "$ENVIRONMENT" \
+            --instanceLabel "$INSTANCE_LABEL" \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > apis.json
 
           cat apis.json
-
-          API_INSTANCE_ID=$(jq -r 
-          ".[] | select(.assetId=="$ASSET_ID") | .id" 
-          apis.json | head -1)
+          API_INSTANCE_ID=$(jq -r ".[] | select(.assetId=="$ASSET_ID") | .id" apis.json | head -1)
 
           echo "FOUND API_INSTANCE_ID=$API_INSTANCE_ID"
 
           if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
-          ```
           echo "Creating API Manager Instance..."
 
           anypoint-cli-v4 api-mgr:api:manage \
@@ -109,22 +107,22 @@ jobs:
             --muleVersion4OrAbove \
             --apiInstanceLabel "$INSTANCE_LABEL"
 
-          sleep 15
+          sleep 2
 
           anypoint-cli-v4 api-mgr:api:list \
+            --environment "$ENVIRONMENT" \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > apis.json
 
-          API_INSTANCE_ID=$(jq -r \
-            ".[] | select(.assetId==\"$ASSET_ID\") | .id" \
-            apis.json | head -1)
-          ```
+          API_INSTANCE_ID=$(jq -r ".[] | select(.assetId==\"$ASSET_ID\") | .id" apis.json | head -1)
 
+          else
+          
+          echo "Existing API Manager Instance found with ID: $API_INSTANCE_ID"
+          
           fi
-
           echo "API_INSTANCE_ID=$API_INSTANCE_ID"
-
           echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
 
       - name: Apply Policies
