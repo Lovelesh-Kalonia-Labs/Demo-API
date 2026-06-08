@@ -103,7 +103,7 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --muleVersion4OrAbove \
             --apiInstanceLabel "$INSTANCE_LABEL"
-            --output json > apisnew.json`
+            --output json > apisnew.json
 
           cat apisnew.json
         
@@ -114,7 +114,7 @@ jobs:
             --instanceLabel "$INSTANCE_LABEL" \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-            --output json > apis.json`
+            --output json > apis.json
 
           API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
 
