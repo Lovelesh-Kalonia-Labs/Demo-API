@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: corretto
           java-version: 17
 
       - name: Install jq
@@ -31,7 +31,7 @@ jobs:
         run: sudo apt-get install -y libxml2-utils
 
       - name: Install CLI
-        run: npm install -g anypoint-cli-v4
+        run: npm install -g anypoint-cli-v4-public
 
       - name: Configure Environment
         run: |
@@ -42,26 +42,14 @@ jobs:
             echo "ENVIRONMENT=SANDBOX" >> $GITHUB_ENV
             echo "CONFIG_FILE=anypoint-info/SANDBOX.json" >> $GITHUB_ENV
           fi
+          echo "ENVIRONMENT=${ENVIRONMENT}"
+          echo "CONFIG_FILE=${CONFIG_FILE}"
 
-      - name: CLI Login
+      - name: CLI Login Check
         run: |
           anypoint-cli-v4 account:environment:list \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
-      
-      - name: Create Maven Settings
-        run: |
-          cat > settings.xml << EOF
-          <settings>
-            <servers>
-              <server>
-                <id>anypoint-exchange-v3</id>
-                <username>~~~Client~~~</username>
-                <password>${{ secrets.CONNECTED_APP_ID }}~?~${{ secrets.CONNECTED_APP_SECRET }}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
 
       - name: Create API Manager Instance
         run: |
