@@ -33,7 +33,7 @@ jobs:
       - name: Install CLI
         run: npm install -g anypoint-cli-v4-public
 
-      - name: Configure Anypoint Platform Environment
+      - name: Select Anypoint Platform Configuration
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             echo "ENVIRONMENT=PRODUCTION" >> $GITHUB_ENV
@@ -43,7 +43,7 @@ jobs:
             echo "CONFIG_FILE=anypoint-info/SANDBOX.json" >> $GITHUB_ENV
           fi
 
-      - name: Display Selected Anypoint Platform Environment
+      - name: Display Selected Anypoint Platform Configuration
         run: |
           echo "Environment: $ENVIRONMENT"
           echo "Config File: $CONFIG_FILE"
@@ -59,6 +59,7 @@ jobs:
 
           echo "Reading configuration..."
 
+          # Extract necessary values from anypoint-info/*.json configuration file
           ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
           ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
           API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
@@ -67,6 +68,7 @@ jobs:
           echo "ASSET_VERSION=$ASSET_VERSION"
           echo "API_VERSION=$API_VERSION"
 
+          # Extract artifactId and version from pom.xml
           MULE_PROJECT_ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
           MULE_PROJECT_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
 
@@ -103,9 +105,9 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --muleVersion4OrAbove \
             --apiInstanceLabel "$INSTANCE_LABEL" \
-            --output json > apisnew.json
+            --output json > apicreate.json
 
-          cat apisnew.json
+          # cat apicreate.json # To print the output
         
           sleep 1
 
@@ -117,17 +119,46 @@ jobs:
             --output json > apis.json
 
           API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
+          echo "Created new API with ID: $API_INSTANCE_ID"
 
           else
-          
           echo "Existing API Manager Instance found with ID: $API_INSTANCE_ID"
           
           fi
-          echo "API_INSTANCE_ID=$API_INSTANCE_ID"
+
           echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
 
       - name: Apply Policies
-        run: bash scripts/policies.sh
+        run: |
+          anypoint-cli-v4 api-mgr:policy:list \
+           "$API_INSTANCE_ID" \
+            --output json > policystate.json
+          
+          echo "Current policies applied to API instance $API_INSTANCE_ID:"
+          cat policystate.json # To print the output
+
+          jq -c '.policies[]' "$CONFIG_FILE" | while read -r policy
+
+          do
+
+            POLICY_NAME=$(echo "$policy" | jq -r '.name')
+
+            echo "Processing policy $POLICY_NAME"
+
+            POLICY_EXISTS=$(jq -r \
+              --arg policy "$POLICY_NAME" \
+              '.[] | select(.policyTemplateId==$policy) | .id' \
+              policystate.json)
+
+            if [ -z "$POLICY_EXISTS" ]; then
+
+              anypoint-cli-v4 api-mgr:policy:apply \
+                "$API_INSTANCE_ID" \
+                "$POLICY_NAME"
+
+            fi
+
+          done
 
       - name: Create SLA Tier
         run: bash scripts/sla.sh
