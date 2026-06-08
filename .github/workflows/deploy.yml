@@ -112,6 +112,7 @@ jobs:
           anypoint-cli-v4 api-mgr:api:manage \
             "$ASSET_ID" \
             "$ASSET_VERSION" \
+            --environment "$ENVIRONMENT" \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --muleVersion4OrAbove \
