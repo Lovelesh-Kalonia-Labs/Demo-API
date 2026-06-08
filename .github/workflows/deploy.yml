@@ -57,8 +57,6 @@ jobs:
       - name: Create API Manager Instance
         run: |
 
-          set -ex
-
           echo "Reading configuration..."
 
           ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
