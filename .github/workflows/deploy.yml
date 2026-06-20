@@ -57,27 +57,30 @@ jobs:
       - name: Reuse/Create API Manager Instance
         run: |
 
-          echo "Reading configuration..."
+          echo "Reading anypoint-info/$CONFIG_FILE..."
 
-          # Extract necessary values from anypoint-info/*.json configuration file
-          ASSET_ID=$(jq -r '.exchangeApi.assetId' "$CONFIG_FILE")
-          ASSET_VERSION=$(jq -r '.exchangeApi.version' "$CONFIG_FILE")
-          API_VERSION=$(jq -r '.exchangeApi.apiVersion' "$CONFIG_FILE")
+          # Extract assetId from configuration file
+          ASSET_ID=$(jq -r '.exchangeAssetId' "$CONFIG_FILE")
 
           echo "ASSET_ID=$ASSET_ID"
+          echo "Reading pom.xml..."
+
+          # Extract asset version from pom.xml file using assetId
+          ASSET_VERSION=$(xmllint --xpath "string(//dependency[artifactId='$ASSET_ID' and classifier='raml']/version)" pom.xml)
           echo "ASSET_VERSION=$ASSET_VERSION"
+
+          MAJOR_VERSION=$(echo "$ASSET_VERSION" | cut -d. -f1)
+          API_VERSION="v${MAJOR_VERSION}"
           echo "API_VERSION=$API_VERSION"
 
-          # Extract artifactId and version from pom.xml
           MULE_PROJECT_ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
-          MULE_PROJECT_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
-
           echo "MULE_PROJECT_ARTIFACT_ID=$MULE_PROJECT_ARTIFACT_ID"
-          echo "MULE_PROJECT_VERSION=$MULE_PROJECT_VERSION"
+
+          echo "Building instance label for API Manager..."
 
           INSTANCE_LABEL="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}-${API_VERSION}"
-
           echo "INSTANCE_LABEL=$INSTANCE_LABEL"
+
           echo "Searching for existing API instances..."
 
           anypoint-cli-v4 api-mgr:api:list \
@@ -122,8 +125,8 @@ jobs:
 
           else
 
-            echo "Existing API Manager Instance found with ID: $API_INSTANCE_ID"
-            echo "Updating RAML Spec Version to: $ASSET_VERSION"
+            echo "Existing API Manager Instance found with Autodiscovery ID: $API_INSTANCE_ID"
+            echo "Updating RAML Specification Version to: $ASSET_VERSION"
 
             anypoint-cli-v4 api-mgr:api:change-specification \
               "$API_INSTANCE_ID" \
@@ -133,7 +136,7 @@ jobs:
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --output json > apiramlupdate.json
 
-            cat apiramlupdate.json # To print the output
+            # cat apiramlupdate.json # To print the output
           
           fi
 
