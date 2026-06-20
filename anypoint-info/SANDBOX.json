@@ -2,7 +2,7 @@
   "exchangeApi": {
     "groupId": "7d88f903-949c-478a-a8b4-47e914af48b0",
     "assetId": "demo-api-raml-spec",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "classifier": "raml",
     "apiVersion": "v1"
   },
