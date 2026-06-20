@@ -53,11 +53,15 @@ jobs:
           anypoint-cli-v4 account:environment:list \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+            --output json > environments.json
 
-      - name: Reuse/Create API Manager Instance
+          # cat environments.json # To print the output
+          echo "Status - OK"
+
+      - name: Create/Update API Manager Instance
         run: |
 
-          echo "Reading anypoint-info/$CONFIG_FILE..."
+          echo "Reading $CONFIG_FILE..."
 
           # Extract assetId from configuration file
           ASSET_ID=$(jq -r '.exchangeAssetId' "$CONFIG_FILE")
@@ -81,7 +85,7 @@ jobs:
           INSTANCE_LABEL="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}-${API_VERSION}"
           echo "INSTANCE_LABEL=$INSTANCE_LABEL"
 
-          echo "Searching for existing API instances..."
+          echo "Looking for existing API instances..."
 
           anypoint-cli-v4 api-mgr:api:list \
             --environment "$ENVIRONMENT" \
@@ -119,6 +123,8 @@ jobs:
               --client_id "${{ secrets.CONNECTED_APP_ID }}" \
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --output json > apis.json
+
+            # cat apis.json # To print the output
 
             API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
             echo "Autodiscovery ID: $API_INSTANCE_ID"
