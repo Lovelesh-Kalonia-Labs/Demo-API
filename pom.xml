@@ -102,7 +102,7 @@
 		<dependency>
 			<groupId>7d88f903-949c-478a-a8b4-47e914af48b0</groupId>
 			<artifactId>demo-api-raml-spec</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 			<classifier>raml</classifier>
 			<type>zip</type>
 		</dependency>
