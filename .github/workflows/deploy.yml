@@ -165,7 +165,7 @@ jobs:
 
             # cat apiramlupdate.json # To print the output
 
-            echo "Updated to $ASSET_VERSION"
+            echo "Asset Version updated to $ASSET_VERSION"
           
           fi
 
