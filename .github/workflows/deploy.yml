@@ -52,7 +52,7 @@ jobs:
         run: |
           anypoint-cli-v4 account:environment:list \
             --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > environments.json
 
           # cat environments.json # To print the output
