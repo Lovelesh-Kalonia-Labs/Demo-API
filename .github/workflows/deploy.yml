@@ -64,15 +64,32 @@ jobs:
           echo "Reading $CONFIG_FILE..."
 
           # Extract assetId from configuration file
-          ASSET_ID=$(jq -r '.exchangeAssetId' "$CONFIG_FILE")
+          ASSET_ID=$(jq -r '.exchangeAssetId' // empty "$CONFIG_FILE")
+
+          if [ -z "$ASSET_ID" ]; then
+          
+            echo "exchangeAssetId not found in $CONFIG_FILE"
+            echo "Skipping API Manager Instance creation/update"
+            exit 0
+          
+          fi
 
           echo "ASSET_ID=$ASSET_ID"
           echo "Reading pom.xml..."
 
           # Extract asset version from pom.xml file using assetId
-          ASSET_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='dependencies']/*[local-name()='dependency'][*[local-name()='artifactId']='$ASSET_ID' and *[local-name()='classifier']='raml']/*[local-name()='version']/text()" pom.xml)
-          echo "ASSET_VERSION=$ASSET_VERSION"
+          ASSET_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='dependencies']/*[local-name()='dependency'][*[local-name()='artifactId']='$ASSET_ID' and *[local-name()='classifier']='raml']/*[local-name()='version']/text()" pom.xml 2>/dev/null || true)
+          
+          if [ -z "$ASSET_VERSION" ]; then
 
+            echo "RAML dependency not found in pom.xml"
+            echo "Skipping API Manager Instance creation/update."
+
+            exit 0
+
+          fi
+          
+          echo "ASSET_VERSION=$ASSET_VERSION"
           MAJOR_VERSION=$(echo "$ASSET_VERSION" | cut -d. -f1)
           API_VERSION="v${MAJOR_VERSION}"
           echo "API_VERSION=$API_VERSION"
@@ -101,7 +118,8 @@ jobs:
 
           if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
-            echo "Not found. Creating new API Manager Instance..."
+            echo "Not found"
+            echo "Creating new API Manager Instance..."
 
             anypoint-cli-v4 api-mgr:api:manage \
               "$ASSET_ID" \
@@ -131,8 +149,8 @@ jobs:
 
           else
 
-            echo "Existing API Manager Instance found with Autodiscovery ID: $API_INSTANCE_ID"
-            echo "Updating RAML Specification Version to: $ASSET_VERSION"
+            echo "Found Autodiscovery ID: $API_INSTANCE_ID"
+            echo "Updating RAML Specification Version..."
 
             anypoint-cli-v4 api-mgr:api:change-specification \
               "$API_INSTANCE_ID" \
@@ -143,6 +161,8 @@ jobs:
               --output json > apiramlupdate.json
 
             # cat apiramlupdate.json # To print the output
+
+            echo "Updated to $ASSET_VERSION"
           
           fi
 
