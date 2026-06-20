@@ -56,7 +56,7 @@ jobs:
             --output json > environments.json
 
           # cat environments.json # To print the output
-          echo "Status - OK"
+          echo "Status: OK"
 
       - name: Create/Update API Manager Instance
         run: |
@@ -70,11 +70,13 @@ jobs:
           
             echo "exchangeAssetId not found in $CONFIG_FILE"
             echo "Skipping API Manager Instance creation/update"
+            
+            echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
             exit 0
           
           fi
 
-          echo "ASSET_ID=$ASSET_ID"
+          echo "Asset ID: $ASSET_ID"
           echo "Reading pom.xml..."
 
           # Extract asset version from pom.xml file using assetId
@@ -85,22 +87,23 @@ jobs:
             echo "RAML dependency not found in pom.xml"
             echo "Skipping API Manager Instance creation/update."
 
+            echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
             exit 0
 
           fi
           
-          echo "ASSET_VERSION=$ASSET_VERSION"
+          echo "Asset Version: $ASSET_VERSION"
           MAJOR_VERSION=$(echo "$ASSET_VERSION" | cut -d. -f1)
           API_VERSION="v${MAJOR_VERSION}"
-          echo "API_VERSION=$API_VERSION"
+          echo "API Version: $API_VERSION"
 
           MULE_PROJECT_ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
-          echo "MULE_PROJECT_ARTIFACT_ID=$MULE_PROJECT_ARTIFACT_ID"
+          echo "Mule Project Artifact ID: $MULE_PROJECT_ARTIFACT_ID"
 
           echo "Building instance label for API Manager..."
 
           INSTANCE_LABEL="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}-${API_VERSION}"
-          echo "INSTANCE_LABEL=$INSTANCE_LABEL"
+          echo "Instance Label: $INSTANCE_LABEL"
 
           echo "Looking for existing API instances..."
 
@@ -167,8 +170,10 @@ jobs:
           fi
 
           echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
+          echo "API_MANAGER_ENABLED=true" >> $GITHUB_ENV
 
       - name: Apply Policies
+        if: env.API_MANAGER_ENABLED == 'true'
         run: |
           anypoint-cli-v4 api-mgr:policy:list \
             "$API_INSTANCE_ID" \
@@ -208,6 +213,7 @@ jobs:
           done
 
       - name: Create SLA Tier
+        if: env.API_MANAGER_ENABLED == 'true'
         run: bash scripts/sla.sh
 
       - name: Deploy CloudHub 2.0
