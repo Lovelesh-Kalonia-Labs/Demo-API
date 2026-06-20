@@ -1,5 +1,5 @@
 {
-  "exchangeAssetId": "demo-api-raml-spec-test",
+  "exchangeAssetId": "demo-api-raml-spec",
   "deployment": {
     "replicas": 1,
     "vCores": 0.1,
