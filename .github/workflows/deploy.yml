@@ -66,7 +66,7 @@ jobs:
           echo "Reading pom.xml..."
 
           # Extract asset version from pom.xml file using assetId
-          ASSET_VERSION=$(xmllint --xpath "string(//dependency[artifactId='$ASSET_ID' and classifier='raml']/version)" pom.xml)
+          ASSET_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='dependencies']/*[local-name()='dependency'][*[local-name()='artifactId']='$ASSET_ID' and *[local-name()='classifier']='raml']/*[local-name()='version']/text()" pom.xml)
           echo "ASSET_VERSION=$ASSET_VERSION"
 
           MAJOR_VERSION=$(echo "$ASSET_VERSION" | cut -d. -f1)
