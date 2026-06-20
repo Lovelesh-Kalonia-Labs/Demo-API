@@ -24,13 +24,13 @@ jobs:
           distribution: corretto
           java-version: 17
 
-      - name: Install jq
+      - name: Install JQ
         run: sudo apt-get install -y jq
 
       - name: Install XML Tools
         run: sudo apt-get install -y libxml2-utils
 
-      - name: Install CLI
+      - name: Install Anypoint CLI
         run: npm install -g anypoint-cli-v4-public
 
       - name: Select Anypoint Platform Configuration
@@ -68,7 +68,7 @@ jobs:
 
           if [ -z "$ASSET_ID" ]; then
           
-            echo "exchangeAssetId not found in $CONFIG_FILE"
+            echo "Exchange Asset ID not found in $CONFIG_FILE"
             echo "Skipping API Manager Instance creation/update"
             
             echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
