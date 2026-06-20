@@ -64,7 +64,7 @@ jobs:
           echo "Reading $CONFIG_FILE..."
 
           # Extract assetId from configuration file
-          ASSET_ID=$(jq -r '.exchangeAssetId' // empty "$CONFIG_FILE")
+          ASSET_ID=$(jq -r '.exchangeAssetId //empty' "$CONFIG_FILE")
 
           if [ -z "$ASSET_ID" ]; then
           
