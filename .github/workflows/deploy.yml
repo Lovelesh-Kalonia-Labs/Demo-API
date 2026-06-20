@@ -78,24 +78,23 @@ jobs:
           INSTANCE_LABEL="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}-${API_VERSION}"
 
           echo "INSTANCE_LABEL=$INSTANCE_LABEL"
+          echo "Searching for existing API instances..."
 
-          # echo "Searching for existing API instances..."
-
-          # anypoint-cli-v4 api-mgr:api:list \
-          #   --environment "$ENVIRONMENT" \
-          #   --instanceLabel "$INSTANCE_LABEL" \
-          #   --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-          #   --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-          #   --output json > apis.json
+          anypoint-cli-v4 api-mgr:api:list \
+            --environment "$ENVIRONMENT" \
+            --instanceLabel "$INSTANCE_LABEL" \
+            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+            --output json > apis.json
 
           # cat apis.json # To print the output
 
           # Below command will only grab the id of the first one it finds. (It is possible for multiple instances to exist with the same label)
-          # API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1) 
+          API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1) 
 
-          # if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
+          if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
-          #   echo "Not found. Creating new API Manager Instance..."
+            echo "Not found. Creating new API Manager Instance..."
 
             anypoint-cli-v4 api-mgr:api:manage \
               "$ASSET_ID" \
@@ -107,7 +106,7 @@ jobs:
               --apiInstanceLabel "$INSTANCE_LABEL" \
               --output json > apicreate.json
 
-            cat apicreate.json # To print the output
+            # cat apicreate.json # To print the output
           
             sleep 3
 
@@ -121,11 +120,22 @@ jobs:
             API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
             echo "Autodiscovery ID: $API_INSTANCE_ID"
 
-          # else
+          else
 
-          #   echo "Existing API Manager Instance found with ID: $API_INSTANCE_ID"
+            echo "Existing API Manager Instance found with ID: $API_INSTANCE_ID"
+            echo "Updating RAML Spec Version to: $ASSET_VERSION"
+
+            anypoint-cli-v4 api-mgr:api:change-specification \
+              "$API_INSTANCE_ID" \
+              "$ASSET_VERSION" \
+              --environment "$ENVIRONMENT" \
+              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+              --output json > apiramlupdate.json
+
+            cat apiramlupdate.json # To print the output
           
-          # fi
+          fi
 
           echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
 
