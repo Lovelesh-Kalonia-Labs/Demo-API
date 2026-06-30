@@ -37,11 +37,10 @@ jobs:
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             echo "ENVIRONMENT=PRODUCTION" >> $GITHUB_ENV
-            echo "CONFIG_FILE=anypoint-info/PRODUCTION.json" >> $GITHUB_ENV
           else
             echo "ENVIRONMENT=SANDBOX" >> $GITHUB_ENV
-            echo "CONFIG_FILE=anypoint-info/SANDBOX.json" >> $GITHUB_ENV
           fi
+          echo "CONFIG_FILE=anypoint-config.json" >> $GITHUB_ENV
 
       - name: Display Selected Anypoint Platform Configuration
         run: |
