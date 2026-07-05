@@ -44,8 +44,8 @@ jobs:
 
       - name: Display Selected Anypoint Platform Configuration
         run: |
-          echo "Environment: $ENVIRONMENT"
-          echo "Config File: $CONFIG_FILE"
+          echo "Environment : $ENVIRONMENT"
+          echo "Config File : $CONFIG_FILE"
 
       - name: CLI Login Check
         run: |
@@ -55,7 +55,7 @@ jobs:
             --output json > environments.json
 
           # cat environments.json # To print the output
-          echo "Status: OK"
+          echo "Status : OK"
 
       - name: Create/Update API Manager Instance
         run: |
@@ -75,7 +75,7 @@ jobs:
           
           fi
 
-          echo "Asset ID: $ASSET_ID"
+          echo "Asset ID                 : $ASSET_ID"
           echo "Reading pom.xml..."
 
           # Extract asset version from pom.xml file using assetId
@@ -91,18 +91,18 @@ jobs:
 
           fi
           
-          echo "Asset Version: $ASSET_VERSION"
+          echo "Asset Version            : $ASSET_VERSION"
           MAJOR_VERSION=$(echo "$ASSET_VERSION" | cut -d. -f1)
           API_VERSION="v${MAJOR_VERSION}"
-          echo "API Version: $API_VERSION"
+          echo "API Version              : $API_VERSION"
 
           MULE_PROJECT_ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
-          echo "Mule Project Artifact ID: $MULE_PROJECT_ARTIFACT_ID"
+          echo "Mule Project Artifact ID : $MULE_PROJECT_ARTIFACT_ID"
 
           echo "Building instance label for API Manager..."
 
           INSTANCE_LABEL="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}-${API_VERSION}"
-          echo "Instance Label: $INSTANCE_LABEL"
+          echo "Instance Label           : $INSTANCE_LABEL"
 
           echo "Looking for existing API instances..."
 
@@ -148,12 +148,12 @@ jobs:
             # cat apis.json # To print the output
 
             API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
-            echo "Autodiscovery ID: $API_INSTANCE_ID"
+            echo "Autodiscovery ID       : $API_INSTANCE_ID"
 
           else
 
-            echo "Found Autodiscovery ID: $API_INSTANCE_ID"
-            echo "Current Asset Version: $CURRENT_ASSET_VERSION"
+            echo "Found Autodiscovery ID : $API_INSTANCE_ID"
+            echo "Current Asset Version  : $CURRENT_ASSET_VERSION"
 
             if [ "$CURRENT_ASSET_VERSION" = "$ASSET_VERSION" ]; then
 
@@ -185,19 +185,8 @@ jobs:
       - name: Apply Policies
         if: env.API_MANAGER_ENABLED == 'true'
         run: |
-          anypoint-cli-v4 api-mgr:policy:list \
-            "$API_INSTANCE_ID" \
-            --environment "$ENVIRONMENT" \
-            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-            --output json > policystate.json
           
-          echo "List of policies applied to API instance $API_INSTANCE_ID:"
-          cat policystate.json # To print the output
-
-          echo "========================================="
-          echo "Processing API Policies"
-          echo "========================================="
+          echo "Fetching policies applied to API instance - $API_INSTANCE_ID..."
 
           anypoint-cli-v4 api-mgr:policy:list \
             "$API_INSTANCE_ID" \
@@ -206,26 +195,29 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > appliedpolicies.json
 
-          cat appliedpolicies.json # To print the output
+          # cat appliedpolicies.json # To print the output
+
+          echo "Reading policies from $CONFIG_FILE..."
 
           jq -c '.policies[]' "$CONFIG_FILE" | while read -r policy
+
           do
 
-            echo ""
             echo "-----------------------------------------"
 
             POLICY_NAME=$(echo "$policy" | jq -r '.name')
             POLICY_VERSION=$(echo "$policy" | jq -r '.version')
             POLICY_CONFIGURATION=$(echo "$policy" | jq -c '.configuration')
 
-            echo "Policy Name       : $POLICY_NAME"
-            echo "Desired Version   : $POLICY_VERSION"
+            echo "Policy Name     : $POLICY_NAME"
+            echo "Desired Version : $POLICY_VERSION"
+            echo "Checking if policy is applied..."
 
             POLICY_ID=$(jq -r --arg name "$POLICY_NAME" '.[] | select(."Asset ID"==$name) | .ID' appliedpolicies.json)
 
             if [ -z "$POLICY_ID" ] || [ "$POLICY_ID" = "null" ]; then
 
-              echo "Status            : Not Applied"
+              echo "Status        : Not Applied"
               echo "Applying policy..."
 
               anypoint-cli-v4 api-mgr:policy:apply \
@@ -236,68 +228,79 @@ jobs:
                 --environment "$ENVIRONMENT" \
                 --client_id "${{ secrets.CONNECTED_APP_ID }}" \
                 --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-                --output json > policyapplyresult.json
+                --output json > policyapply.json
 
-              cat policyapplyresult.json # To print the output
+              # cat policyapply.json # To print the output
 
-              echo "Policy applied successfully."
+              echo "Policy applied successfully"
 
               continue
 
             fi
 
             CURRENT_VERSION=$(jq -r --arg name "$POLICY_NAME" '.[] | select(."Asset ID"==$name) | ."Asset Version"' appliedpolicies.json)
-            echo "Current Version   : $CURRENT_VERSION"
 
-            CURRENT_CONFIGURATION=$(jq -r --arg name "$POLICY_NAME" '.[] | select(."Asset ID"==$name) | .Configuration' appliedpolicies.json)
-            echo "Current Configuration: $CURRENT_CONFIGURATION"
+            echo "Status          : Already Applied"
+            echo "Policy ID       : $POLICY_ID"
+            echo "Current Version : $CURRENT_VERSION"
+            echo "Desired Version : $POLICY_VERSION"
 
-            DESIRED_CONFIGURATION=$(echo "$POLICY_CONFIGURATION" | jq -r 'to_entries | map("\(.key): \(.value)") | join("\n")')
-            echo "Desired Configuration: $DESIRED_CONFIGURATION"
+            if [ "$CURRENT_VERSION" != "$POLICY_VERSION" ]; then
 
-            VERSION_CHANGED=false
-            CONFIG_CHANGED=false
+              echo "Version change requires removal and re-application of the policy"
+              echo "Removing existing policy..."
 
-            [ "$CURRENT_VERSION" != "$POLICY_VERSION" ] && VERSION_CHANGED=true
-            [ "$CURRENT_CONFIGURATION" != "$DESIRED_CONFIGURATION" ] && CONFIG_CHANGED=true
-
-            echo "Status            : Already Applied"
-            echo "Policy ID         : $POLICY_ID"
-            echo "Current Version   : $CURRENT_VERSION"
-            echo "Desired Version   : $POLICY_VERSION"
-            echo "Version Changed   : $VERSION_CHANGED"
-            echo "Config Changed    : $CONFIG_CHANGED"
-
-            if [ "$VERSION_CHANGED" = "true" ] || [ "$CONFIG_CHANGED" = "true" ]; then
-
-              echo "Updating policy..."
-
-              anypoint-cli-v4 api-mgr:policy:edit \
+              anypoint-cli-v4 api-mgr:policy:remove \
                 "$API_INSTANCE_ID" \
                 "$POLICY_ID" \
+                --environment "$ENVIRONMENT" \
+                --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+                --output json > policyremove.json
+
+              # cat policyremove.json # To print the output
+
+              echo "Policy removed successfully"
+              echo "Applying policy version $POLICY_VERSION..."
+
+              anypoint-cli-v4 api-mgr:policy:apply \
+                "$API_INSTANCE_ID" \
+                "$POLICY_NAME" \
                 --policyVersion "$POLICY_VERSION" \
                 --config "$POLICY_CONFIGURATION" \
                 --environment "$ENVIRONMENT" \
                 --client_id "${{ secrets.CONNECTED_APP_ID }}" \
                 --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-                --output json > policyeditresult.json
+                --output json > policyapply.json
 
-              cat policyeditresult.json # To print the output
+              # cat policyapply.json # To print the output
 
-              echo "Policy updated successfully."
+              echo "Policy updated successfully"
 
             else
 
-              echo "Policy already up-to-date."
+              echo "Policy version is already up-to-date"
+              echo "Updating policy configuration..."
+
+              anypoint-cli-v4 api-mgr:policy:edit \
+                "$API_INSTANCE_ID" \
+                "$POLICY_ID" \
+                --config "$POLICY_CONFIGURATION" \
+                --environment "$ENVIRONMENT" \
+                --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+                --output json > policyedit.json
+
+              # cat policyedit.json # To print the output
+
+              echo "Policy configuration updated successfully"
 
             fi
 
           done
 
-          echo ""
           echo "========================================="
-          echo "Policy Processing Complete"
-          echo "========================================="
+          echo "Policies Processing Complete"
 
       - name: Create SLA Tier
         if: env.API_MANAGER_ENABLED == 'true'
