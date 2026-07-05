@@ -206,7 +206,7 @@ jobs:
             --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
             --output json > appliedpolicies.json
 
-          # cat appliedpolicies.json
+          cat appliedpolicies.json # To print the output
 
           jq -c '.policies[]' "$CONFIG_FILE" | while read -r policy
           do
@@ -240,7 +240,10 @@ jobs:
                 --config "$POLICY_CONFIGURATION" \
                 --environment "$ENVIRONMENT" \
                 --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+                --output json > policyapplyresult.json
+
+              cat policyapplyresult.json # To print the output
 
               echo "Policy applied successfully."
 
@@ -291,7 +294,10 @@ jobs:
                 --config "$POLICY_CONFIGURATION" \
                 --environment "$ENVIRONMENT" \
                 --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+                --output json > policyeditresult.json
+
+              cat policyeditresult.json # To print the output
 
               echo "Policy updated successfully."
 
