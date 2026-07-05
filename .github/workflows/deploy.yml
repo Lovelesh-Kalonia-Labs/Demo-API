@@ -182,7 +182,7 @@ jobs:
           echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
           echo "API_MANAGER_ENABLED=true" >> $GITHUB_ENV
 
-      - name: Apply Policies
+      - name: Apply/Update Policies
         if: env.API_MANAGER_ENABLED == 'true'
         run: |
           
