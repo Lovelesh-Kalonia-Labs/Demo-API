@@ -117,6 +117,7 @@ jobs:
 
           # Below command will only grab the id of the first one it finds. (It is possible for multiple instances to exist with the same label)
           API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1) 
+          CURRENT_ASSET_VERSION=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .assetVersion' apis.json | head -1)
 
           if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
@@ -152,19 +153,28 @@ jobs:
           else
 
             echo "Found Autodiscovery ID: $API_INSTANCE_ID"
-            echo "Updating RAML Specification Version..."
+            echo "Current Asset Version: $CURRENT_ASSET_VERSION"
 
-            anypoint-cli-v4 api-mgr:api:change-specification \
-              "$API_INSTANCE_ID" \
-              "$ASSET_VERSION" \
-              --environment "$ENVIRONMENT" \
-              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
-              --output json > apiramlupdate.json
+            if [ "$CURRENT_ASSET_VERSION" = "$ASSET_VERSION" ]; then
 
-            # cat apiramlupdate.json # To print the output
+              echo "RAML specification is already up-to-date with code."
 
-            echo "Asset Version updated to $ASSET_VERSION"
+            else
+              echo "Updating RAML Specification Version..."
+
+              anypoint-cli-v4 api-mgr:api:change-specification \
+                "$API_INSTANCE_ID" \
+                "$ASSET_VERSION" \
+                --environment "$ENVIRONMENT" \
+                --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+                --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+                --output json > apiramlupdate.json
+
+              # cat apiramlupdate.json # To print the output
+
+              echo "Asset Version updated to $ASSET_VERSION"
+
+            fi
           
           fi
 
