@@ -221,12 +221,7 @@ jobs:
             echo "Policy Name       : $POLICY_NAME"
             echo "Desired Version   : $POLICY_VERSION"
 
-            POLICY_ID=$(jq -r \
-              --arg name "$POLICY_NAME" \
-              '.[]
-                | select(."Asset ID"==$name)
-                | .ID' \
-              appliedpolicies.json)
+            POLICY_ID=$(jq -r --arg name "$POLICY_NAME" '.[] | select(."Asset ID"==$name) | .ID' appliedpolicies.json)
 
             if [ -z "$POLICY_ID" ] || [ "$POLICY_ID" = "null" ]; then
 
@@ -251,25 +246,14 @@ jobs:
 
             fi
 
-            CURRENT_VERSION=$(jq -r \
-              --arg name "$POLICY_NAME" \
-              '.[]
-                | select(."Asset ID"==$name)
-                | ."Asset Version"' \
-              appliedpolicies.json)
+            CURRENT_VERSION=$(jq -r --arg name "$POLICY_NAME" '.[] | select(."Asset ID"==$name) | ."Asset Version"' appliedpolicies.json)
+            echo "Current Version   : $CURRENT_VERSION"
 
-            CURRENT_CONFIGURATION=$(jq -r \
-              --arg name "$POLICY_NAME" \
-              '.[]
-                | select(."Asset ID"==$name)
-                | .Configuration' \
-              appliedpolicies.json)
+            CURRENT_CONFIGURATION=$(jq -r --arg name "$POLICY_NAME" '.[] | select(."Asset ID"==$name) | .Configuration' appliedpolicies.json)
+            echo "Current Configuration: $CURRENT_CONFIGURATION"
 
-            DESIRED_CONFIGURATION=$(echo "$POLICY_CONFIGURATION" | jq -r '
-                to_entries
-                | map("\(.key): \(.value)")
-                | join("\n")
-            ')
+            DESIRED_CONFIGURATION=$(echo "$POLICY_CONFIGURATION" | jq -r 'to_entries | map("\(.key): \(.value)") | join("\n")')
+            echo "Desired Configuration: $DESIRED_CONFIGURATION"
 
             VERSION_CHANGED=false
             CONFIG_CHANGED=false
@@ -291,6 +275,7 @@ jobs:
               anypoint-cli-v4 api-mgr:policy:edit \
                 "$API_INSTANCE_ID" \
                 "$POLICY_ID" \
+                --policyVersion "$POLICY_VERSION" \
                 --config "$POLICY_CONFIGURATION" \
                 --environment "$ENVIRONMENT" \
                 --client_id "${{ secrets.CONNECTED_APP_ID }}" \
