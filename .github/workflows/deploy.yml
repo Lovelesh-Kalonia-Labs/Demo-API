@@ -217,7 +217,7 @@ jobs:
 
             if [ -z "$POLICY_ID" ] || [ "$POLICY_ID" = "null" ]; then
 
-              echo "Status        : Not Applied"
+              echo "Status          : Not Applied"
               echo "Applying policy..."
 
               anypoint-cli-v4 api-mgr:policy:apply \
