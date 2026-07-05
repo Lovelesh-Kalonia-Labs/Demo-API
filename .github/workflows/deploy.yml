@@ -148,12 +148,12 @@ jobs:
             # cat apis.json # To print the output
 
             API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
-            echo "Autodiscovery ID       : $API_INSTANCE_ID"
+            echo "Autodiscovery ID         : $API_INSTANCE_ID"
 
           else
 
-            echo "Found Autodiscovery ID : $API_INSTANCE_ID"
-            echo "Current Asset Version  : $CURRENT_ASSET_VERSION"
+            echo "Found Autodiscovery ID   : $API_INSTANCE_ID"
+            echo "Current Asset Version    : $CURRENT_ASSET_VERSION"
 
             if [ "$CURRENT_ASSET_VERSION" = "$ASSET_VERSION" ]; then
 
@@ -243,7 +243,6 @@ jobs:
             echo "Status          : Already Applied"
             echo "Policy ID       : $POLICY_ID"
             echo "Current Version : $CURRENT_VERSION"
-            echo "Desired Version : $POLICY_VERSION"
 
             if [ "$CURRENT_VERSION" != "$POLICY_VERSION" ]; then
 
