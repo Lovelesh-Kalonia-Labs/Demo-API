@@ -9,6 +9,18 @@
         "clientIdExpression": "#[attributes.headers['client_id']]",
         "clientSecretExpression": "#[attributes.headers['client_secret']]"
       }
+    },
+    {
+      "name": "spike-control",
+      "version": "1.2.2",
+      "configuration": {
+        "maximumRequests": 1,
+        "timePeriodInMilliseconds": 1000,
+        "delayTimeInMillis": 1000,
+        "delayAttempts": 1,
+        "queuingLimit": 5,
+        "exposeHeaders": false
+      }
     }
   ],
   "sla": {
