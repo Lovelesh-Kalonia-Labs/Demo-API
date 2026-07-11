@@ -390,7 +390,7 @@ jobs:
               "${LIMIT_ARGS[@]}" \
               --environment "$ENVIRONMENT" \
               --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --output json > tiercreate.json
 
           else
@@ -402,7 +402,7 @@ jobs:
               "${LIMIT_ARGS[@]}" \
               --environment "$ENVIRONMENT" \
               --client_id "${{ secrets.CONNECTED_APP_ID }}" \
-              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --output json > tiercreate.json
 
           fi
