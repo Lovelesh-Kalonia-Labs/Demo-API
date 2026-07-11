@@ -25,13 +25,13 @@
   ],
   "sla": {
     "name": "Default SLA",
-    "description": "Default SLA created by CI/CD pipeline to prevent automatic approval of client applications.",
+    "description": "Default SLA created by CI/CD pipeline to prevent automatic approval of client applications",
     "autoApprove": false,
     "limits": [
       {
         "visible": true,
         "maximumRequests": 1000,
-        "timeUnit": "sec"
+        "timePeriodUnit": "sec"
       }
     ]
   }

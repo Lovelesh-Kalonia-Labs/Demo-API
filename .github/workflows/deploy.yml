@@ -63,12 +63,12 @@ jobs:
           echo "Reading $CONFIG_FILE..."
 
           # Extract assetId from configuration file
-          ASSET_ID=$(jq -r '.exchangeAssetId //empty' "$CONFIG_FILE")
+          ASSET_ID=$(jq -r '.exchangeAssetId // ""' "$CONFIG_FILE")
 
           if [ -z "$ASSET_ID" ]; then
           
             echo "Exchange Asset ID not found in $CONFIG_FILE"
-            echo "Skipping API Manager Instance creation/update"
+            echo "Skipping API Manager Instance creation/update..."
             
             echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
             exit 0
@@ -185,7 +185,21 @@ jobs:
       - name: Apply/Update Policies
         if: env.API_MANAGER_ENABLED == 'true'
         run: |
-          
+
+          echo "Reading $CONFIG_FILE..."
+
+          POLICY_COUNT=$(jq '.policies // [] | length' "$CONFIG_FILE")
+
+          if [ "$POLICY_COUNT" -eq 0 ]; then
+
+            echo "No policies found in $CONFIG_FILE"
+            echo "Skipping Policy Application/Update..."
+
+            exit 0
+
+          fi
+
+          echo "Policies count  : $POLICY_COUNT"
           echo "Fetching policies applied to API instance - $API_INSTANCE_ID..."
 
           anypoint-cli-v4 api-mgr:policy:list \
@@ -303,7 +317,95 @@ jobs:
 
       - name: Create SLA Tier
         if: env.API_MANAGER_ENABLED == 'true'
-        run: bash scripts/sla.sh
+        run: |
+        
+          echo "Reading $CONFIG_FILE..."
+
+          SLA_KEY_COUNT=$(jq '.sla // {} | length' "$CONFIG_FILE")
+
+          if [ "$SLA_KEY_COUNT" -eq 0 ]; then
+
+            echo "No SLA configuration found in $CONFIG_FILE"
+            echo "Skipping SLA processing..."
+
+            exit 0
+
+          fi
+
+          SLA_NAME=$(jq -r '.sla.name' "$CONFIG_FILE")
+          SLA_DESCRIPTION=$(jq -r '.sla.description' "$CONFIG_FILE")
+          SLA_AUTO_APPROVE=$(jq -r '.sla.autoApprove' "$CONFIG_FILE")
+          SLA_LIMITS=$(jq -c '.sla.limits' "$CONFIG_FILE")
+
+          echo "SLA Name        : $SLA_NAME"
+          echo "Description     : $SLA_DESCRIPTION"
+          echo "Auto Approve    : $SLA_AUTO_APPROVE"
+          echo "Limits          : $SLA_LIMITS"
+
+          LIMIT_ARGS=()
+
+          while IFS= read -r limit
+          do
+
+            LIMIT_ARGS+=(
+              --limit
+              "$(echo "$limit" | jq -r '"\(.visible),\(.maximumRequests),\(.timePeriodUnit)"')"
+            )
+
+          done < <(jq -c '.sla.limits[]' "$CONFIG_FILE")
+
+          echo "Checking existing SLA Tiers..."
+
+          anypoint-cli-v4 api-mgr:tier:list \
+            "$API_INSTANCE_ID" \
+            --environment "$ENVIRONMENT" \
+            --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+            --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+            --output json > tierlist.json
+
+          # cat tierlist.json
+
+          TIER_ID=$(jq -r --arg name "$SLA_NAME" '.[] | select(.name==$name) | .id' tierlist.json)
+
+          if [ -n "$TIER_ID" ] && [ "$TIER_ID" != "null" ]; then
+
+            echo "$SLA_NAME Tier already exists"
+            echo "Tier ID : $TIER_ID"
+            echo "Skipping creation..."
+
+            exit 0
+
+          fi
+
+          echo "$SLA_NAME Tier not found."
+          echo "Creating..."
+
+          if [ "$SLA_AUTO_APPROVE" = "true" ]; then
+
+            anypoint-cli-v4 api-mgr:tier:add \
+              "$API_INSTANCE_ID" \
+              --name "$SLA_NAME" \
+              --description "$SLA_DESCRIPTION" \
+              --autoApprove \
+              "${LIMIT_ARGS[@]}" \
+              --environment "$ENVIRONMENT" \
+              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+
+          else
+
+            anypoint-cli-v4 api-mgr:tier:add \
+              "$API_INSTANCE_ID" \
+              --name "$SLA_NAME" \
+              --description "$SLA_DESCRIPTION" \
+              "${LIMIT_ARGS[@]}" \
+              --environment "$ENVIRONMENT" \
+              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+
+          fi
+
+          echo "$SLA_NAME Tier created successfully"
 
       - name: Deploy CloudHub 2.0
         run: |
