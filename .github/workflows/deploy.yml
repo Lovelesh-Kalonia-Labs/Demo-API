@@ -354,7 +354,7 @@ jobs:
 
           done < <(jq -c '.sla.limits[]' "$CONFIG_FILE")
 
-          echo "Checking existing SLA Tiers..."
+          echo "Searching existing SLA Tiers..."
 
           anypoint-cli-v4 api-mgr:tier:list \
             "$API_INSTANCE_ID" \
@@ -370,14 +370,14 @@ jobs:
           if [ -n "$TIER_ID" ] && [ "$TIER_ID" != "null" ]; then
 
             echo "$SLA_NAME Tier already exists"
-            echo "Tier ID : $TIER_ID"
-            echo "Skipping creation..."
+            echo "Tier ID         : $TIER_ID"
+            echo "Skipping SLA creation..."
 
             exit 0
 
           fi
 
-          echo "$SLA_NAME Tier not found."
+          echo "$SLA_NAME Tier not found"
           echo "Creating..."
 
           if [ "$SLA_AUTO_APPROVE" = "true" ]; then
@@ -391,6 +391,7 @@ jobs:
               --environment "$ENVIRONMENT" \
               --client_id "${{ secrets.CONNECTED_APP_ID }}" \
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+              --output json > tiercreate.json
 
           else
 
@@ -402,8 +403,11 @@ jobs:
               --environment "$ENVIRONMENT" \
               --client_id "${{ secrets.CONNECTED_APP_ID }}" \
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}"
+              --output json > tiercreate.json
 
           fi
+
+          # cat tiercreate.json # To print the output
 
           echo "$SLA_NAME Tier created successfully"
 
