@@ -416,7 +416,7 @@ jobs:
 
           echo "Building Mule Application..."
 
-          mvn clean package -DskipTests -DorgId="${{ vars.ORG_ID }}" -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
+          mvn clean package -DskipTests -s settings.xml -DorgId="${{ vars.ORG_ID }}" -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
 
           echo "Mule Application build completed"
 
