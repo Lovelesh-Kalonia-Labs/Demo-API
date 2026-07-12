@@ -416,7 +416,7 @@ jobs:
 
           echo "Building Mule Application..."
 
-          mvn clean package -DskipTests -DorgId="${{ ORG_ID }}"
+          mvn clean package -DskipTests -DorgId="${{ vars.ORG_ID }}"
 
           echo "Mule Application build completed"
 
