@@ -411,6 +411,14 @@ jobs:
 
           echo "$SLA_NAME Tier created successfully"
 
+      - name: Build Mule Application
+        run: |
+          echo "Building Mule Application..."
+
+          mvn clean package -DskipTests
+
+          echo "Mule Application build completed"
+
       - name: Deploy CloudHub 2.0
         run: |
           APP_NAME=$(bash -c '
