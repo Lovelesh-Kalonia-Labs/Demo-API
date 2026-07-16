@@ -57,6 +57,25 @@ jobs:
           # cat environments.json # To print the output
           echo "Status : OK"
 
+      - name: Read Project Metadata
+        run: |
+          echo "Reading pom.xml..."
+
+          ORG_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='groupId']/text()" pom.xml)
+          echo "Mule Project Organization ID : $ORG_ID"
+
+          MULE_PROJECT_ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
+          echo "Mule Project Artifact ID     : $MULE_PROJECT_ARTIFACT_ID"
+
+          MULE_PROJECT_VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
+          echo "Mule Project Version         : $MULE_PROJECT_VERSION"
+          
+          echo "ORG_ID=$ORG_ID" >> "$GITHUB_ENV"
+          echo "MULE_PROJECT_ARTIFACT_ID=$MULE_PROJECT_ARTIFACT_ID" >> "$GITHUB_ENV"
+          echo "MULE_PROJECT_VERSION=$MULE_PROJECT_VERSION" >> "$GITHUB_ENV"
+
+          echo "Project metadata loaded successfully"
+
       - name: Create/Update API Manager Instance
         run: |
 
@@ -95,9 +114,6 @@ jobs:
           MAJOR_VERSION=$(echo "$ASSET_VERSION" | cut -d. -f1)
           API_VERSION="v${MAJOR_VERSION}"
           echo "API Version              : $API_VERSION"
-
-          MULE_PROJECT_ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
-          echo "Mule Project Artifact ID : $MULE_PROJECT_ARTIFACT_ID"
 
           echo "Building instance label for API Manager..."
 
@@ -416,9 +432,18 @@ jobs:
 
           echo "Building Mule Application..."
 
-          mvn clean package -DskipTests -s settings.xml -DorgId="${{ vars.ORG_ID }}" -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
+          mvn clean package -DskipTests -s settings.xml -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
 
-          echo "Mule Application build completed"
+          echo "Build completed successfully"
+
+      - name: Publish Mule Application to Exchange
+        run: |
+
+          echo "Publishing Mule Application to Exchange..."
+
+          mvn deploy -DskipTests -s settings.xml -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
+
+          echo "Mule Application published successfully"
 
       - name: Deploy CloudHub 2.0
         run: |
