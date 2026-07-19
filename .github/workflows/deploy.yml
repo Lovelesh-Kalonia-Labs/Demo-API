@@ -457,7 +457,7 @@ jobs:
           DEPLOY_CMD="anypoint-cli-v4 runtime-mgr:application:deploy \
             --name \"$APPLICATION_NAME\" \
             --groupId \"$ORG_ID\" \
-            --artifactId\"$MULE_PROJECT_ARTIFACT_ID\" \
+            --artifactId \"$MULE_PROJECT_ARTIFACT_ID\" \
             --assetVersion \"$MULE_PROJECT_VERSION\" \
             --runtimeVersion \"${{ vars.CH_MULE_VERSION }}\" \
             --releaseChannel \"${{ vars.CH_RELEASE_CHANNEL }}\" \
