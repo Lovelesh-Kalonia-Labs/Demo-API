@@ -444,27 +444,29 @@ jobs:
           APPLICATION_NAME="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}"
 
           echo "CH App Name                           : $APPLICATION_NAME"
-          echo "Target                                : ${{ vars.CH_TARGET }}"
+          echo "Deployment Target                     : ${{ vars.CH_TARGET }}"
           echo "Mule Runtime Version                  : ${{ vars.CH_MULE_VERSION }}"
           echo "Release Channel                       : ${{ vars.CH_RELEASE_CHANNEL }}"
           echo "Java Version                          : ${{ vars.CH_JAVA_VERSION }}"
-          echo "Replicas                              : ${{ vars.CH_REPLICAS }}"
+          echo "Number of Replicas                    : ${{ vars.CH_REPLICAS }}"
           echo "Replica Size                          : ${{ vars.CH_VCORES }}"
           echo "Exchange Mule Project Organization ID : $ORG_ID"
           echo "Exchange Mule Project Artifact ID     : $MULE_PROJECT_ARTIFACT_ID"
           echo "Exchange Mule Project Version         : $MULE_PROJECT_VERSION"
 
           DEPLOY_CMD="anypoint-cli-v4 runtime-mgr:application:deploy \
-            \"$APPLICATION_NAME\" \
-            \"${{ vars.CH_TARGET }}\" \
-            \"${{ vars.CH_MULE_VERSION }}\" \
-            \"$MULE_PROJECT_ARTIFACT_ID\" \
+            --name \"$APPLICATION_NAME\" \
             --groupId \"$ORG_ID\" \
+            --artifactId\"$MULE_PROJECT_ARTIFACT_ID\" \
             --assetVersion \"$MULE_PROJECT_VERSION\" \
+            --runtimeVersion \"${{ vars.CH_MULE_VERSION }}\" \
             --releaseChannel \"${{ vars.CH_RELEASE_CHANNEL }}\" \
             --javaVersion \"${{ vars.CH_JAVA_VERSION }}\" \
+            --deploymentTargetId \"${{ vars.CH_TARGET }}\" \
             --replicas \"${{ vars.CH_REPLICAS }}\" \
             --replicaSize \"${{ vars.CH_VCORES }}\" \
+            --objectStoreV2 \
+            --environment \"$ENVIRONMENT\" \
             --client_id \"${{ secrets.CONNECTED_APP_ID }}\" \
             --client_secret \"${{ secrets.CONNECTED_APP_SECRET }}\" \
             --output json > ch2deploy.json"
@@ -472,8 +474,8 @@ jobs:
           if [ "$API_MANAGER_ENABLED" = "true" ]; then
             DEPLOY_CMD="$DEPLOY_CMD \
               --property api.id:$API_INSTANCE_ID \
-              --property anypoint.platform.client_id:${{ secrets.ENV_ID }} \
-              --property anypoint.platform.client_secret:${{ secrets.ENV_SECRET }}"
+              --secureProperty anypoint.platform.client_id:${{ secrets.ENV_ID }} \
+              --secureProperty anypoint.platform.client_secret:${{ secrets.ENV_SECRET }}"
           fi
 
           eval "$DEPLOY_CMD"
