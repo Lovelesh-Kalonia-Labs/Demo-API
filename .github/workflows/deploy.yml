@@ -427,21 +427,12 @@ jobs:
 
           echo "$SLA_NAME Tier created successfully"
 
-      - name: Build Mule Application
+      - name: Build & Publish Mule Application to Exchange
         run: |
 
-          echo "Building Mule Application..."
+          echo "Building & Publishing Mule Application to Exchange..."
 
-          mvn clean package -DskipTests -s settings.xml -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
-
-          echo "Build completed successfully"
-
-      - name: Publish Mule Application to Exchange
-        run: |
-
-          echo "Publishing Mule Application to Exchange..."
-
-          mvn deploy -DskipTests -s settings.xml -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
+          mvn clean deploy -DskipTests -s settings.xml -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
 
           echo "Mule Application published successfully"
 
