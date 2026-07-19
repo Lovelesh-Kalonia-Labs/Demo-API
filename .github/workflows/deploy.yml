@@ -442,6 +442,9 @@ jobs:
           echo "Deploying Mule Application to CH 2.0..."
 
           APPLICATION_NAME="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}"
+          
+          # Convert application name to lowercase to comply with CH 2.0 naming convention
+          APPLICATION_NAME="${APPLICATION_NAME,,}"
 
           echo "CH App Name                           : $APPLICATION_NAME"
           echo "Deployment Target                     : ${{ vars.CH_TARGET }}"
@@ -480,6 +483,6 @@ jobs:
 
           eval "$DEPLOY_CMD"
 
-          # cat ch2deploy.json # To print the output
+          cat ch2deploy.json # To print the output
 
           echo "Deployment completed successfully"
