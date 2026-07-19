@@ -455,14 +455,14 @@ jobs:
           echo "Exchange Mule Project Version         : $MULE_PROJECT_VERSION"
 
           DEPLOY_CMD="anypoint-cli-v4 runtime-mgr:application:deploy \
-            --name \"$APPLICATION_NAME\" \
-            --groupId \"$ORG_ID\" \
-            --artifactId \"$MULE_PROJECT_ARTIFACT_ID\" \
+            \"$APPLICATION_NAME\" \
+            \"${{ vars.CH_TARGET }}\" \
+            \"${{ vars.CH_MULE_VERSION }}\" \
+            \"$MULE_PROJECT_ARTIFACT_ID\" \
             --assetVersion \"$MULE_PROJECT_VERSION\" \
-            --runtimeVersion \"${{ vars.CH_MULE_VERSION }}\" \
+            --groupId \"$ORG_ID\" \
             --releaseChannel \"${{ vars.CH_RELEASE_CHANNEL }}\" \
             --javaVersion \"${{ vars.CH_JAVA_VERSION }}\" \
-            --deploymentTargetId \"${{ vars.CH_TARGET }}\" \
             --replicas \"${{ vars.CH_REPLICAS }}\" \
             --replicaSize \"${{ vars.CH_VCORES }}\" \
             --objectStoreV2 \
