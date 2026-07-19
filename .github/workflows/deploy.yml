@@ -439,7 +439,7 @@ jobs:
       - name: Deploy CloudHub 2.0
         run: |
 
-          echo "Deploying Mule Application to CH 2.0..."
+          echo "Fetching deployment configuration..."
 
           APPLICATION_NAME="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}"
           
@@ -456,6 +456,8 @@ jobs:
           echo "Exchange Mule Project Organization ID : $ORG_ID"
           echo "Exchange Mule Project Artifact ID     : $MULE_PROJECT_ARTIFACT_ID"
           echo "Exchange Mule Project Version         : $MULE_PROJECT_VERSION"
+
+          echo "Deploying Mule Application to CH 2.0..."
 
           DEPLOY_CMD="anypoint-cli-v4 runtime-mgr:application:deploy \
             \"$APPLICATION_NAME\" \
