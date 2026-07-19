@@ -438,23 +438,46 @@ jobs:
 
       - name: Deploy CloudHub 2.0
         run: |
-          APP_NAME=$(bash -c '
-            source scripts/common.sh
-            generate_app_name
-          ')
 
-          REPLICAS=$(jq -r '.deployment.replicas' "$CONFIG_FILE")
-          VCORES=$(jq -r '.deployment.vCores' "$CONFIG_FILE")
-          TARGET=$(jq -r '.deployment.target' "$CONFIG_FILE")
-          PUBLIC_URL=$(jq -r '.deployment.publicUrl' "$CONFIG_FILE")
+          echo "Deploying Mule Application to CH 2.0..."
 
-          mvn clean deploy -DmuleDeploy \
-            -DenvName=$ENVIRONMENT \
-            -DapplicationName=$APP_NAME \
-            -Dreplicas=$REPLICAS \
-            -DvCores=$VCORES \
-            -Dtarget=$TARGET \
-            -DpublicUrl=$PUBLIC_URL \
-            -DapiId=$API_INSTANCE_ID \
-            -DconnectedAppClientId=${{ secrets.CONNECTED_APP_ID }} \
-            -DconnectedAppClientSecret=${{ secrets.CONNECTED_APP_SECRET }}
+          APPLICATION_NAME="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}"
+
+          echo "CH App Name                           : $APPLICATION_NAME"
+          echo "Target                                : ${{ vars.CH_TARGET }}"
+          echo "Mule Runtime Version                  : ${{ vars.CH_MULE_VERSION }}"
+          echo "Release Channel                       : ${{ vars.CH_RELEASE_CHANNEL }}"
+          echo "Java Version                          : ${{ vars.CH_JAVA_VERSION }}"
+          echo "Replicas                              : ${{ vars.CH_REPLICAS }}"
+          echo "Replica Size                          : ${{ vars.CH_VCORES }}"
+          echo "Exchange Mule Project Organization ID : $ORG_ID"
+          echo "Exchange Mule Project Artifact ID     : $MULE_PROJECT_ARTIFACT_ID"
+          echo "Exchange Mule Project Version         : $MULE_PROJECT_VERSION"
+
+          DEPLOY_CMD="anypoint-cli-v4 runtime-mgr:application:deploy \
+            \"$APPLICATION_NAME\" \
+            \"${{ vars.CH_TARGET }}\" \
+            \"${{ vars.CH_MULE_VERSION }}\" \
+            \"$MULE_PROJECT_ARTIFACT_ID\" \
+            --groupId \"$ORG_ID\" \
+            --assetVersion \"$MULE_PROJECT_VERSION\" \
+            --releaseChannel \"${{ vars.CH_RELEASE_CHANNEL }}\" \
+            --javaVersion \"${{ vars.CH_JAVA_VERSION }}\" \
+            --replicas \"${{ vars.CH_REPLICAS }}\" \
+            --replicaSize \"${{ vars.CH_VCORES }}\" \
+            --client_id \"${{ secrets.CONNECTED_APP_ID }}\" \
+            --client_secret \"${{ secrets.CONNECTED_APP_SECRET }}\" \
+            --output json > ch2deploy.json"
+
+          if [ "$API_MANAGER_ENABLED" = "true" ]; then
+            DEPLOY_CMD="$DEPLOY_CMD \
+              --property api.id:$API_INSTANCE_ID \
+              --property anypoint.platform.client_id:${{ secrets.ENV_ID }} \
+              --property anypoint.platform.client_secret:${{ secrets.ENV_SECRET }}"
+          fi
+
+          eval "$DEPLOY_CMD"
+
+          # cat ch2deploy.json # To print the output
+
+          echo "Deployment completed successfully"
