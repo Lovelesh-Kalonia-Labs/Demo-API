@@ -3,7 +3,8 @@ name: MuleSoft Release Creation
 on:
   push:
     branches:
-      - master
+      - master # For legacy repos
+      - main
 
 permissions:
   contents: write
