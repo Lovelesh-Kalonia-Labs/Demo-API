@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  deploy:
+  release-creation:
     runs-on: ubuntu-latest
     
     environment: ${{ 'PRODUCTION' }}
@@ -65,7 +65,7 @@ jobs:
           git push origin "v${VERSION}"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.VERSION }}
           name: Release v${{ env.VERSION }}
@@ -77,9 +77,19 @@ jobs:
 
       - name: Increment to Next Snapshot
         run: |
-          mvn build-helper:parse-version versions:set \
-            -DnewVersion=${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.$((parsedVersion.incrementalVersion+1))-SNAPSHOT \
-            versions:commit
+          VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
+
+          VERSION=${VERSION%-SNAPSHOT}
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          PATCH=$((PATCH + 1))
+
+          NEXT_VERSION="${MAJOR}.${MINOR}.${PATCH}-SNAPSHOT"
+
+          mvn versions:set \
+              -DnewVersion="$NEXT_VERSION" \
+              -DgenerateBackupPoms=false
 
       - name: Commit Next Snapshot
         shell: bash

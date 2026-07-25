@@ -6,7 +6,7 @@ on:
       - develop
 
 jobs:
-  deploy:
+  sandbox-deployment:
     runs-on: ubuntu-latest
     
     environment: ${{ 'SANDBOX' }}
