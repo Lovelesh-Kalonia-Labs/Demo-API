@@ -33,26 +33,30 @@ jobs:
       - name: Install Anypoint CLI
         run: npm install -g anypoint-cli-v4-public
 
-      - name: Select Anypoint Platform Configuration
+      - name: Select Environment Configuration
         run: |
+          echo "Selecting Environment Configuration..."
+
           # Store the environment and config file in GitHub Actions environment variables for later use
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             echo "ENVIRONMENT=PRODUCTION" >> $GITHUB_ENV
+          
           else
             echo "ENVIRONMENT=SANDBOX" >> $GITHUB_ENV
+          
           fi
+
           echo "CONFIG_FILE=anypoint-config.json" >> $GITHUB_ENV
 
-      - name: Display Selected Anypoint Platform Configuration
+          echo "Configuration variables set successfully"
+
+      - name: Display Selected Environment Configuration
         run: |
-          echo "========================================="
           echo "Environment : $ENVIRONMENT"
           echo "Config File : $CONFIG_FILE"
-          echo "========================================="
 
       - name: CLI Login Check
         run: |
-          echo "========================================="
           echo "Checking Anypoint CLI login..."
 
           anypoint-cli-v4 account:environment:list \
@@ -61,16 +65,12 @@ jobs:
             --output json > environments.json
 
           # cat environments.json # To print the output
-          
-          echo "========================================="
+
           echo "Status : OK"
-          echo "========================================="
 
       - name: Read Project Metadata
         run: |
-          echo "========================================="
           echo "Reading pom.xml..."
-          echo "========================================="
 
           ORG_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='groupId']/text()" pom.xml)
 
@@ -89,13 +89,10 @@ jobs:
           echo "MULE_PROJECT_ARTIFACT_ID=$MULE_PROJECT_ARTIFACT_ID" >> "$GITHUB_ENV"
           echo "MULE_PROJECT_VERSION=$MULE_PROJECT_VERSION" >> "$GITHUB_ENV"
 
-          echo "========================================="
           echo "Project metadata loaded successfully"
-          echo "========================================="
 
       - name: Create/Update API Manager Instance
         run: |
-          echo "========================================="
           echo "Reading $CONFIG_FILE..."
 
           # Extract assetId from configuration file
@@ -103,20 +100,16 @@ jobs:
 
           if [ -z "$ASSET_ID" ]; then
 
-            echo "========================================="
             echo "Exchange Asset ID not found in $CONFIG_FILE"
             echo "Skipping API Manager Instance creation/update..."
-            echo "========================================="
-
+  
             # Store the API_MANAGER_ENABLED variable in GitHub Actions environment variables for later use
             echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
             exit 0
           
           fi
 
-          echo "========================================="
           echo "Asset ID                 : $ASSET_ID"
-          echo "========================================="
           echo "Reading pom.xml..."
 
           # Extract asset version from pom.xml file using assetId
@@ -124,32 +117,26 @@ jobs:
           
           if [ -z "$ASSET_VERSION" ]; then
 
-            echo "========================================="
             echo "RAML dependency not found in pom.xml"
             echo "Skipping API Manager Instance creation/update..."
-            echo "========================================="
-
+  
             # Store the API_MANAGER_ENABLED variable in GitHub Actions environment variables for later use
             echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
             exit 0
 
           fi
           
-          echo "========================================="
           echo "Asset Version            : $ASSET_VERSION"
 
           MAJOR_VERSION=$(echo "$ASSET_VERSION" | cut -d. -f1)
           API_VERSION="v${MAJOR_VERSION}"
 
           echo "API Version              : $API_VERSION"
-          echo "========================================="
           echo "Building instance label for API Manager..."
-          echo "========================================="
 
           INSTANCE_LABEL="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}-${API_VERSION}"
           
           echo "Instance Label           : $INSTANCE_LABEL"
-          echo "========================================="
           echo "Looking for existing API instances with this label..."
 
           anypoint-cli-v4 api-mgr:api:list \
@@ -167,9 +154,7 @@ jobs:
 
           if [ -z "$API_INSTANCE_ID" ] || [ "$API_INSTANCE_ID" = "null" ]; then
 
-            echo "========================================="
             echo "Not found"
-            echo "========================================="
             echo "Creating new API Manager Instance..."
 
             anypoint-cli-v4 api-mgr:api:manage \
@@ -184,7 +169,6 @@ jobs:
 
             # cat apicreate.json # To print the output
 
-            echo "========================================="
             sleep 3
 
             anypoint-cli-v4 api-mgr:api:list \
@@ -199,25 +183,21 @@ jobs:
             API_INSTANCE_ID=$(jq -r --arg asset "$ASSET_ID" '.[] | select(.assetId==$asset) | .id' apis.json | head -1)
             
             echo "Autodiscovery ID         : $API_INSTANCE_ID"
-            echo "========================================="
-
+            echo "API Manager Instance created successfully"
+  
           else
 
-            echo "========================================="
             echo "Found Autodiscovery ID   : $API_INSTANCE_ID"
             echo "Current Asset Version    : $CURRENT_ASSET_VERSION"
-            echo "========================================="
-
+  
             if [ "$CURRENT_ASSET_VERSION" = "$ASSET_VERSION" ]; then
 
               echo "RAML specification is already up-to-date with code"
-              echo "========================================="
-
+    
             else
 
               echo "Updating RAML Specification Version..."
-              echo "========================================="
-
+    
               anypoint-cli-v4 api-mgr:api:change-specification \
                 "$API_INSTANCE_ID" \
                 "$ASSET_VERSION" \
@@ -229,8 +209,7 @@ jobs:
               # cat apiramlupdate.json # To print the output
 
               echo "Asset Version updated to $ASSET_VERSION"
-              echo "========================================="
-
+    
             fi
           
           fi
@@ -242,24 +221,19 @@ jobs:
       - name: Apply/Update Policies
         if: env.API_MANAGER_ENABLED == 'true'
         run: |
-          echo "========================================="
           echo "Reading $CONFIG_FILE..."
 
           POLICY_COUNT=$(jq '.policies // [] | length' "$CONFIG_FILE")
 
           if [ "$POLICY_COUNT" -eq 0 ]; then
 
-            echo "========================================="
             echo "No policies found in $CONFIG_FILE"
             echo "Skipping Policy Application/Update..."
-            echo "========================================="
             exit 0
 
           fi
 
-          echo "========================================="
           echo "# of Policies         : $POLICY_COUNT"
-          echo "========================================="
           echo "Retrieving currently applied policies to API instance - $API_INSTANCE_ID..."
 
           anypoint-cli-v4 api-mgr:policy:list \
@@ -273,16 +247,14 @@ jobs:
 
           APPLIED_POLICY_COUNT=$(jq 'length' appliedpolicies.json)
 
-          echo "========================================="
           echo "Applied # of Policies : $APPLIED_POLICY_COUNT"
-          echo "========================================="
           echo "Processing policies from $CONFIG_FILE..."
 
           jq -c '.policies[]' "$CONFIG_FILE" | while read -r policy
 
           do
 
-            echo "========================================="
+            echo "------------------------------------------"
 
             POLICY_NAME=$(echo "$policy" | jq -r '.name')
             
@@ -294,16 +266,13 @@ jobs:
 
             POLICY_CONFIGURATION=$(echo "$policy" | jq -c '.configuration')
 
-            echo "-----------------------------------------"
             echo "Checking if policy is already applied..."
-            echo "-----------------------------------------"
 
             POLICY_ID=$(jq -r --arg name "$POLICY_NAME" '.[] | select(."Asset ID"==$name) | .ID' appliedpolicies.json)
 
             if [ -z "$POLICY_ID" ] || [ "$POLICY_ID" = "null" ]; then
 
               echo "Status                : Not Applied"
-              echo "-----------------------------------------"
               echo "Applying policy..."
 
               anypoint-cli-v4 api-mgr:policy:apply \
@@ -318,7 +287,6 @@ jobs:
 
               # cat policyapply.json # To print the output
 
-              echo "-----------------------------------------"
               echo "Policy applied successfully"
 
               continue
@@ -330,12 +298,10 @@ jobs:
             echo "Status                : Already Applied"
             echo "Policy ID             : $POLICY_ID"
             echo "Current Version       : $CURRENT_VERSION"
-            echo "-----------------------------------------"
 
             if [ "$CURRENT_VERSION" != "$POLICY_VERSION" ]; then
 
               echo "Version change requires removal and re-application of the policy"
-              echo "-----------------------------------------"
               echo "Removing existing policy..."
 
               anypoint-cli-v4 api-mgr:policy:remove \
@@ -348,9 +314,7 @@ jobs:
 
               # cat policyremove.json # To print the output
 
-              echo "-----------------------------------------"
               echo "Policy removed successfully"
-              echo "-----------------------------------------"
               echo "Applying policy version $POLICY_VERSION..."
 
               anypoint-cli-v4 api-mgr:policy:apply \
@@ -365,13 +329,11 @@ jobs:
 
               # cat policyapply.json # To print the output
 
-              echo "-----------------------------------------"
               echo "Policy updated successfully"
 
             else
 
               echo "Policy version is already up-to-date"
-              echo "-----------------------------------------"
               echo "Updating policy configuration..."
 
               anypoint-cli-v4 api-mgr:policy:edit \
@@ -385,21 +347,18 @@ jobs:
 
               # cat policyedit.json # To print the output
 
-              echo "-----------------------------------------"
               echo "Policy configuration updated successfully"
 
             fi
 
           done
 
-          echo "========================================="
+          echo "------------------------------------------"
           echo "Policies Processing Complete"
-          echo "========================================="
 
       - name: Create SLA Tier
         if: env.API_MANAGER_ENABLED == 'true'
         run: |
-          echo "========================================="
           echo "Reading $CONFIG_FILE..."
 
           SLA_KEY_COUNT=$(jq '.sla // {} | length' "$CONFIG_FILE")
@@ -408,12 +367,9 @@ jobs:
 
             echo "No SLA configuration found in $CONFIG_FILE"
             echo "Skipping SLA processing..."
-            echo "========================================="
             exit 0
 
           fi
-
-          echo "========================================="
 
           SLA_NAME=$(jq -r '.sla.name' "$CONFIG_FILE")
 
@@ -460,18 +416,13 @@ jobs:
 
           if [ -n "$TIER_ID" ] && [ "$TIER_ID" != "null" ]; then
 
-            echo "========================================="
-            echo "$SLA_NAME Tier already exists"
-            echo "========================================="
-            echo "Tier ID         : $TIER_ID"
-            echo "========================================="
-            echo "Skipping SLA creation..."
-            echo "========================================="
-            exit 0
+              echo "$SLA_NAME Tier already exists"
+              echo "Tier ID         : $TIER_ID"
+              echo "Skipping SLA creation..."
+              exit 0
 
           fi
 
-          echo "========================================="
           echo "$SLA_NAME Tier not found"
           echo "=========================================="
           echo "Creating..."
@@ -506,15 +457,11 @@ jobs:
 
           # cat tiercreate.json # To print the output
 
-          echo "========================================="
           echo "$SLA_NAME Tier created successfully"
-          echo "========================================="
 
       - name: Build & Publish Mule Artifact to Exchange
         run: |
-          echo "========================================="
           echo "Building & Publishing Mule Application Artifact to Exchange..."
-          echo "========================================="
 
           mvn clean deploy \
             -DskipTests \
@@ -522,15 +469,11 @@ jobs:
             -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" \
             -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
 
-          echo "========================================="
           echo "Mule Application Artifact published successfully"
-          echo "========================================="
 
       - name: Deploy CloudHub 2.0
         run: |
-          echo "========================================="
           echo "Fetching deployment configuration..."
-          echo "========================================="
 
           APPLICATION_NAME="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}"
           
@@ -548,8 +491,8 @@ jobs:
           echo "Exchange Mule Project Artifact ID     : $MULE_PROJECT_ARTIFACT_ID"
           echo "Exchange Mule Project Version         : $MULE_PROJECT_VERSION"
 
-          echo "========================================="
           echo "Checking if application is already deployed..."
+
 
           echo "Deploying Mule Application to CH 2.0..."
 
@@ -581,6 +524,4 @@ jobs:
 
           # cat ch2deploy.json # To print the output
 
-          echo "========================================="
           echo "Deployment triggered successfully"
-          echo "========================================="
