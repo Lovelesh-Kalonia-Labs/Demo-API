@@ -512,7 +512,7 @@ jobs:
           # cat appslist.json # To print the output
 
           APPLICATION_ID=$(jq -r --arg name "$APPLICATION_NAME" '.[] | select(.name == $name) | .id' appslist.json)
-
+          echo "CH2 App ID                            : $APPLICATION_ID"
           if [ -z "$APPLICATION_ID" ] || [ "$APPLICATION_ID" = "null" ]; then
 
             echo "Not found"
@@ -537,7 +537,9 @@ jobs:
               --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
               --output json > ch2deploy.json $API_MANAGER_ARGS
 
-              # cat ch2deploy.json # To print the output
+            # cat ch2deploy.json # To print the output
+
+            echo "Deployment triggered successfully"
 
           else
 
@@ -563,8 +565,8 @@ jobs:
               --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
               --output json > ch2modify.json $API_MANAGER_ARGS
 
-              # cat ch2modify.json # To print the output
+            # cat ch2modify.json # To print the output
+
+            echo "Update triggered successfully"
 
           fi
-
-          echo "Deployment triggered successfully"
