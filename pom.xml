@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>${orgId}</groupId>
+	<groupId>7d88f903-949c-478a-a8b4-47e914af48b0</groupId>
 	<artifactId>demo-api</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>mule-application</packaging>
@@ -13,7 +13,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<app.runtime>4.11.4</app.runtime>
+		<app.runtime>4.9.17</app.runtime>
 		<mule.maven.plugin.version>4.9.1</mule.maven.plugin.version>
 		<munit.version>3.7.1</munit.version>
 	</properties>
@@ -35,8 +35,31 @@
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
+
 				<configuration>
-					<classifier>mule-application</classifier>
+					<cloudhub2Deployment>
+						<uri>https://anypoint.mulesoft.com</uri>
+						<provider>MC</provider>
+						<environment>${envName}</environment>
+						<target>${target}</target>
+						<muleVersion>${muleVersion}</muleVersion>
+						<applicationName>${applicationName}</applicationName>
+						<replicas>${replicas}</replicas>
+						<vCores>${vCores}</vCores>
+						<deploymentSettings>
+							<http>
+								<inbound>
+									<publicUrl>${applicationName}</publicUrl>
+								</inbound>
+							</http>
+						</deploymentSettings>
+						<properties>
+							<api.id>${apiId}</api.id>
+						</properties>
+						<connectedAppClientId>${connectedAppClientId}</connectedAppClientId>
+						<connectedAppClientSecret>${connectedAppClientSecret}</connectedAppClientSecret>
+						<connectedAppGrantType>client_credentials</connectedAppGrantType>
+					</cloudhub2Deployment>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -64,22 +87,20 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<distributionManagement>
-	    <repository>
-	        <id>anypoint-exchange-v3</id>
-	        <name>Anypoint Exchange</name>
-	        <url>
-	            https://maven.anypoint.mulesoft.com/api/v3/organizations/${project.groupId}/maven
-	        </url>
-	    </repository>
+		<repository>
+			<id>anypoint-exchange-v3</id>
+			<name>Anypoint Exchange</name>
+			<url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${project.groupId}/maven</url>
+		</repository>
 	</distributionManagement>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>7d88f903-949c-478a-a8b4-47e914af48b0</groupId>
 			<artifactId>demo-api-raml-spec</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 			<classifier>raml</classifier>
 			<type>zip</type>
 		</dependency>
