@@ -535,7 +535,6 @@ jobs:
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --property mule.env:$ENVIRONMENT \
               --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
-              $API_MANAGER_ARGS \
               --output json > ch2deploy.json
 
             # cat ch2deploy.json # To print the output
@@ -564,7 +563,6 @@ jobs:
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --property mule.env:$ENVIRONMENT \
               --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
-              $API_MANAGER_ARGS \
               --output json > ch2modify.json
 
             # cat ch2modify.json # To print the output
