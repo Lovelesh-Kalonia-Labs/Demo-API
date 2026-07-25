@@ -538,7 +538,7 @@ jobs:
               $API_MANAGER_ARGS \
               --output json > ch2deploy.json
 
-            # cat ch2deploy.json # To print the output
+            cat ch2deploy.json # To print the output
 
             echo "Deployment triggered successfully"
 
