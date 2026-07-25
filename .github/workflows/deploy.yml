@@ -400,7 +400,6 @@ jobs:
 
           done < <(jq -c '.sla.limits[]' "$CONFIG_FILE")
 
-          echo "=========================================="
           echo "Searching existing SLA Tiers..."
 
           anypoint-cli-v4 api-mgr:tier:list \
@@ -416,15 +415,14 @@ jobs:
 
           if [ -n "$TIER_ID" ] && [ "$TIER_ID" != "null" ]; then
 
-              echo "$SLA_NAME Tier already exists"
-              echo "Tier ID         : $TIER_ID"
-              echo "Skipping SLA creation..."
-              exit 0
+            echo "$SLA_NAME Tier already exists"
+            echo "Tier ID         : $TIER_ID"
+            echo "Skipping SLA creation..."
+            exit 0
 
           fi
 
           echo "$SLA_NAME Tier not found"
-          echo "=========================================="
           echo "Creating..."
 
           # Build the command to create the SLA tier based on the auto-approve configuration
@@ -491,37 +489,76 @@ jobs:
           echo "Exchange Mule Project Artifact ID     : $MULE_PROJECT_ARTIFACT_ID"
           echo "Exchange Mule Project Version         : $MULE_PROJECT_VERSION"
 
-          echo "Checking if application is already deployed..."
-
-
-          echo "Deploying Mule Application to CH 2.0..."
-
-          DEPLOY_CMD="anypoint-cli-v4 runtime-mgr:application:deploy \
-            \"$APPLICATION_NAME\" \
-            \"${{ vars.CH_TARGET }}\" \
-            \"${{ vars.CH_MULE_VERSION }}\" \
-            \"$MULE_PROJECT_ARTIFACT_ID\" \
-            --assetVersion \"$MULE_PROJECT_VERSION\" \
-            --groupId \"$ORG_ID\" \
-            --releaseChannel \"${{ vars.CH_RELEASE_CHANNEL }}\" \
-            --javaVersion \"${{ vars.CH_JAVA_VERSION }}\" \
-            --replicas \"${{ vars.CH_REPLICAS }}\" \
-            --replicaSize \"${{ vars.CH_VCORES }}\" \
-            --objectStoreV2 \
-            --environment \"$ENVIRONMENT\" \
-            --client_id \"${{ secrets.CONNECTED_APP_ID }}\" \
-            --client_secret \"${{ secrets.CONNECTED_APP_SECRET }}\" \
-            --output json > ch2deploy.json"
+          # Build extra arguments for API Manager if the flag was set to true in the previous steps
+          API_MANAGER_ARGS=""
 
           if [ "$API_MANAGER_ENABLED" = "true" ]; then
-            DEPLOY_CMD="$DEPLOY_CMD \
+
+            API_MANAGER_ARGS="\
               --property api.id:$API_INSTANCE_ID \
               --secureProperty anypoint.platform.client_id:${{ secrets.ENV_ID }} \
               --secureProperty anypoint.platform.client_secret:${{ secrets.ENV_SECRET }}"
+
           fi
 
-          eval "$DEPLOY_CMD"
+          echo "Checking if application already exists..."
 
-          # cat ch2deploy.json # To print the output
+          APPLICATION_ID=$(jq -r --arg name "$APPLICATION_NAME" '.[] | select(.name == $name) | .id' appslist.json)
+
+          if [ -z "$APPLICATION_ID" ] || [ "$APPLICATION_ID" = "null" ]; then
+
+            echo "Not found"
+            echo "Deploying new application..."
+
+            anypoint-cli-v4 runtime-mgr:application:deploy \
+              "$APPLICATION_NAME" \
+              "${{ vars.CH_TARGET }}" \
+              "${{ vars.CH_MULE_VERSION }}" \
+              "$MULE_PROJECT_ARTIFACT_ID" \
+              --assetVersion "$MULE_PROJECT_VERSION" \
+              --groupId "$ORG_ID" \
+              --releaseChannel "${{ vars.CH_RELEASE_CHANNEL }}" \
+              --javaVersion "${{ vars.CH_JAVA_VERSION }}" \
+              --replicas "${{ vars.CH_REPLICAS }}" \
+              --replicaSize "${{ vars.CH_VCORES }}" \
+              --objectStoreV2 \
+              --environment "$ENVIRONMENT" \
+              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+              --property mule.env:$ENVIRONMENT \
+              --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
+              $API_MANAGER_ARGS \
+              --output json > ch2deploy.json
+
+              # cat ch2deploy.json # To print the output
+
+          else
+
+            echo "Found existing application"
+            echo "CH2 App ID                            : $APPLICATION_ID"
+            echo "Updating..."
+
+            anypoint-cli-v4 runtime-mgr:application:modify \
+              "$APPLICATION_ID" \
+              --runtimeVersion "${{ vars.CH_MULE_VERSION }}" \
+              --artifactId "$MULE_PROJECT_ARTIFACT_ID" \
+              --assetVersion "$MULE_PROJECT_VERSION" \
+              --groupId "$ORG_ID" \
+              --releaseChannel "${{ vars.CH_RELEASE_CHANNEL }}" \
+              --javaVersion "${{ vars.CH_JAVA_VERSION }}" \
+              --replicas "${{ vars.CH_REPLICAS }}" \
+              --replicaSize "${{ vars.CH_VCORES }}" \
+              --objectStoreV2 \
+              --environment "$ENVIRONMENT" \
+              --client_id "${{ secrets.CONNECTED_APP_ID }}" \
+              --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
+              --property mule.env:$ENVIRONMENT \
+              --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
+              $API_MANAGER_ARGS \
+              --output json > ch2modify.json
+
+              # cat ch2modify.json # To print the output
+
+          fi
 
           echo "Deployment triggered successfully"
