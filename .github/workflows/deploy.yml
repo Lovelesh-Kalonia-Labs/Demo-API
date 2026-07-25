@@ -512,7 +512,7 @@ jobs:
           # cat appslist.json # To print the output
 
           APPLICATION_ID=$(jq -r --arg name "$APPLICATION_NAME" '.[] | select(.name == $name) | .id' appslist.json)
-          echo "CH2 App ID                            : $APPLICATION_ID"
+
           if [ -z "$APPLICATION_ID" ] || [ "$APPLICATION_ID" = "null" ]; then
 
             echo "Not found"
@@ -534,7 +534,8 @@ jobs:
               --client_id "${{ secrets.CONNECTED_APP_ID }}" \
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --property mule.env:$ENVIRONMENT \
-              --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
+              --secureProperty secure.key:${{ secrets.SECURE_KEY }} \
+              $API_MANAGER_ARGS \
               --output json > ch2deploy.json
 
             # cat ch2deploy.json # To print the output
@@ -562,7 +563,8 @@ jobs:
               --client_id "${{ secrets.CONNECTED_APP_ID }}" \
               --client_secret "${{ secrets.CONNECTED_APP_SECRET }}" \
               --property mule.env:$ENVIRONMENT \
-              --secureProperty secure.key:${{ secrets.SECURE_KEY }}" \
+              --secureProperty secure.key:${{ secrets.SECURE_KEY }} \
+              $API_MANAGER_ARGS \
               --output json > ch2modify.json
 
             # cat ch2modify.json # To print the output
