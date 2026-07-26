@@ -77,15 +77,18 @@ jobs:
           echo "Git Tag v${VERSION} created and pushed successfully"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ env.VERSION }}
-          name: Release v${{ env.VERSION }}
-          generate_release_notes: true # It will automatically generated rlease notes based on the commits since the last release
-          files: |
-            target/*.jar
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          echo "Creating GitHub Release for v${VERSION}..."
+
+          gh release create "v${VERSION}" \
+            target/*.jar \
+            --title "Release v${VERSION}" \
+            --generate-notes
+            
+          echo "GitHub Release for v${VERSION} created successfully"
 
       - name: Increment to Next Snapshot
         run: |
