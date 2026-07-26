@@ -3,8 +3,7 @@ name: MuleSoft Release Creation
 on:
   push:
     branches:
-      - master # For legacy repos
-      - main
+      - main # find and replace 'main' with 'master' in this entire script, if your default branch is named 'master'
 
 permissions:
   contents: write
@@ -134,11 +133,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Checking for existing open Sync PR from master to develop..."
+          echo "Checking for existing open Sync PR from main to develop..."
 
           EXISTING_PR=$(gh pr list \
             --base develop \
-            --head master \
+            --head main \
             --state open \
             --json number \
             --jq 'length')
@@ -150,7 +149,7 @@ jobs:
 
             gh pr create \
               --base develop \
-              --head master \
+              --head main \
               --title "sync w/ main" \
               --body "Automatically created after release"
                 
