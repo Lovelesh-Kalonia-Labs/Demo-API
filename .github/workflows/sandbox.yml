@@ -6,7 +6,7 @@ on:
       - develop
 
 jobs:
-  sandbox-deployment:
+  sandbox-prep:
     runs-on: ubuntu-latest
     
     environment: ${{ 'SANDBOX' }}
@@ -47,6 +47,9 @@ jobs:
           # Store the environment and config file in GitHub Actions environment variables for later use
           echo "ENVIRONMENT=SANDBOX" >> $GITHUB_ENV
           echo "CONFIG_FILE=anypoint-config.json" >> $GITHUB_ENV
+
+          # Also store the environment in GitHub Actions output variables for use in next jobs
+          echo "ENVIRONMENT=SANDBOX" >> $GITHUB_OUTPUT
 
           echo "Configuration selected successfully"
 
@@ -89,6 +92,11 @@ jobs:
           echo "MULE_PROJECT_ARTIFACT_ID=$MULE_PROJECT_ARTIFACT_ID" >> "$GITHUB_ENV"
           echo "MULE_PROJECT_VERSION=$MULE_PROJECT_VERSION" >> "$GITHUB_ENV"
 
+          # Also store the extracted values in GitHub Actions output variables for use in next jobs
+          echo "ORG_ID=$ORG_ID" >> "$GITHUB_OUTPUT"
+          echo "MULE_PROJECT_ARTIFACT_ID=$MULE_PROJECT_ARTIFACT_ID" >> "$GITHUB_OUTPUT"
+          echo "MULE_PROJECT_VERSION=$MULE_PROJECT_VERSION" >> "$GITHUB_OUTPUT"
+
           echo "Project metadata loaded successfully"
 
       - name: Create/Update API Manager Instance
@@ -105,6 +113,7 @@ jobs:
   
             # Store the API_MANAGER_ENABLED variable in GitHub Actions environment variables for later use
             echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
+            echo "API_MANAGER_ENABLED=false" >> $GITHUB_OUTPUT
             exit 0
           
           fi
@@ -122,6 +131,7 @@ jobs:
   
             # Store the API_MANAGER_ENABLED variable in GitHub Actions environment variables for later use
             echo "API_MANAGER_ENABLED=false" >> $GITHUB_ENV
+            echo "API_MANAGER_ENABLED=false" >> $GITHUB_OUTPUT
             exit 0
 
           fi
@@ -217,6 +227,10 @@ jobs:
           # Store the API_INSTANCE_ID and API_MANAGER_ENABLED variable in GitHub Actions environment variables for later use
           echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_ENV
           echo "API_MANAGER_ENABLED=true" >> $GITHUB_ENV
+
+          # Also store the API_INSTANCE_ID and API_MANAGER_ENABLED variable in GitHub Actions output variables for use in next jobs
+          echo "API_INSTANCE_ID=$API_INSTANCE_ID" >> $GITHUB_OUTPUT
+          echo "API_MANAGER_ENABLED=true" >> $GITHUB_OUTPUT
 
       - name: Apply/Update Policies
         if: env.API_MANAGER_ENABLED == 'true'
@@ -468,6 +482,28 @@ jobs:
             -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
 
           echo "Mule App Artifact published successfully"
+
+  sandbox-deployment:
+    runs-on: ubuntu-latest
+    
+    environment: ${{ 'SANDBOX' }}
+    
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: 17
+
+      - name: Install JQ
+        run: sudo apt-get install -y jq
+
+      - name: Install XML Tools
+        run: sudo apt-get install -y libxml2-utils
+
+      - name: Install Anypoint CLI
+        run: npm install -g anypoint-cli-v4-public
 
       - name: Deploy CloudHub 2.0
         run: |

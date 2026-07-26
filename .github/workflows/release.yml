@@ -1,4 +1,4 @@
-name: MuleSoft Release Creation
+name: MuleSoft Release & Deployment - PRODUCTION
 
 on:
   push:
