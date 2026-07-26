@@ -10,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     
     environment: ${{ 'SANDBOX' }}
+
+    outputs:
+      ENVIRONMENT: ${{ steps.select-env.outputs.ENVIRONMENT }}
+      ORG_ID: ${{ steps.read-metadata.outputs.ORG_ID }}
+      MULE_PROJECT_ARTIFACT_ID: ${{ steps.read-metadata.outputs.MULE_PROJECT_ARTIFACT_ID }}
+      MULE_PROJECT_VERSION: ${{ steps.read-metadata.outputs.MULE_PROJECT_VERSION }}
+      API_MANAGER_ENABLED: ${{ steps.create-update-api.outputs.API_MANAGER_ENABLED }}
+      API_INSTANCE_ID: ${{ steps.create-update-api.outputs.API_INSTANCE_ID }}
     
     steps:
       - uses: actions/checkout@v5
@@ -41,6 +49,7 @@ jobs:
         run: npm install -g anypoint-cli-v4-public
 
       - name: Select Environment Configuration
+        id: select-env
         run: |
           echo "Selecting Environment Configuration..."
 
@@ -72,6 +81,7 @@ jobs:
           echo "Status : OK"
 
       - name: Read Project Metadata
+        id: read-metadata
         run: |
           echo "Reading pom.xml..."
 
@@ -100,6 +110,7 @@ jobs:
           echo "Project metadata loaded successfully"
 
       - name: Create/Update API Manager Instance
+        id: create-update-api
         run: |
           echo "Reading $CONFIG_FILE..."
 
@@ -476,6 +487,14 @@ jobs:
     needs: sandbox-prep
     
     environment: ${{ 'SANDBOX' }}
+
+    env:
+      ENVIRONMENT: ${{ needs.sandbox-prep.outputs.ENVIRONMENT }}
+      ORG_ID: ${{ needs.sandbox-prep.outputs.ORG_ID }}
+      MULE_PROJECT_ARTIFACT_ID: ${{ needs.sandbox-prep.outputs.MULE_PROJECT_ARTIFACT_ID }}
+      MULE_PROJECT_VERSION: ${{ needs.sandbox-prep.outputs.MULE_PROJECT_VERSION }}
+      API_MANAGER_ENABLED: ${{ needs.sandbox-prep.outputs.API_MANAGER_ENABLED }}
+      API_INSTANCE_ID: ${{ needs.sandbox-prep.outputs.API_INSTANCE_ID }}
     
     steps:
       - uses: actions/checkout@v5
@@ -506,6 +525,8 @@ jobs:
       - name: Deploy CloudHub 2.0
         run: |
           echo "Fetching deployment configuration..."
+
+          echo
 
           APPLICATION_NAME="${ENVIRONMENT}-${MULE_PROJECT_ARTIFACT_ID}"
           
