@@ -487,9 +487,6 @@ jobs:
           distribution: corretto
           java-version: 17
 
-      - name: Install XML Tools
-        run: sudo apt-get install -y libxml2-utils  
-
       - name: Publish Mule App (Release) Artifact to Exchange
         run: |
           echo "Publishing Mule App as a Release Artifact to Exchange..."
@@ -545,9 +542,6 @@ jobs:
 
       - name: Install JQ
         run: sudo apt-get install -y jq
-
-      - name: Install XML Tools
-        run: sudo apt-get install -y libxml2-utils
 
       - name: Install Anypoint CLI
         run: npm install -g anypoint-cli-v4-public
@@ -667,9 +661,6 @@ jobs:
         with:
           distribution: corretto
           java-version: 17
-
-      - name: Install XML Tools
-        run: sudo apt-get install -y libxml2-utils
 
       - name: Increment to Next Snapshot
         run: |

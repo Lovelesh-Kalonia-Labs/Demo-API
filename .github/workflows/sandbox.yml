@@ -471,18 +471,6 @@ jobs:
 
           echo "$SLA_NAME Tier created successfully"
 
-      - name: Publish Mule App Artifact to Exchange
-        run: |
-          echo "Publishing Mule App as an Artifact to Exchange..."
-
-          mvn clean deploy \
-            -DskipTests \
-            -s settings.xml \
-            -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" \
-            -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
-
-          echo "Mule App Artifact published successfully"
-
   sandbox-deployment:
     runs-on: ubuntu-latest
     needs: sandbox-prep
@@ -500,11 +488,20 @@ jobs:
       - name: Install JQ
         run: sudo apt-get install -y jq
 
-      - name: Install XML Tools
-        run: sudo apt-get install -y libxml2-utils
-
       - name: Install Anypoint CLI
         run: npm install -g anypoint-cli-v4-public
+
+      - name: Publish Mule App Artifact to Exchange
+        run: |
+          echo "Publishing Mule App as an Artifact to Exchange..."
+
+          mvn clean deploy \
+            -DskipTests \
+            -s settings.xml \
+            -DconnectedAppClientId="${{ secrets.CONNECTED_APP_ID }}" \
+            -DconnectedAppClientSecret="${{ secrets.CONNECTED_APP_SECRET }}"
+
+          echo "Mule App Artifact published successfully"
 
       - name: Deploy CloudHub 2.0
         run: |
