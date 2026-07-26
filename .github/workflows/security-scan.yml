@@ -17,11 +17,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Gitleaks
+      - name: Install Gitleaks & Scan
         run: |
-          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh \
-            | sh -s -- -b /usr/local/bin
-      
-      - name: Scan full Git history
-        run: |
-          gitleaks git --log-opts="--all" --verbose
+          git clone https://github.com/gitleaks/gitleaks.git
+          cd gitleaks
+          make build
+          gitleaks git \
+            --log-opts="--all" \
+            --verbose \
+            --redact \
+            --report-format sarif \
+            --report-path results.sarif
