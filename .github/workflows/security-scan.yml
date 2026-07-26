@@ -1,4 +1,4 @@
-name: Security Scan
+name: Secrets Scan
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   security-events: write
 
 jobs:
-  scan:
+  gitleaks-scan:
     runs-on: ubuntu-latest
 
     steps:
