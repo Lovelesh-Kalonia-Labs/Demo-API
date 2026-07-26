@@ -17,8 +17,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gitleaks Secret Scan
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_ARGS: --log-opts = "--all"
+      - name: Install Gitleaks
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh \
+            | sh -s -- -b /usr/local/bin
+      
+      - name: Scan full Git history
+        run: |
+          gitleaks git --log-opts="--all" --verbose
