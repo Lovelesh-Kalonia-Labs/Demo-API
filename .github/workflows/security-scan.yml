@@ -32,9 +32,3 @@ jobs:
             --report-format sarif \
             --report-path results.sarif \
             --exit-code 1
-
-      - name: Upload SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
