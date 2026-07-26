@@ -6,25 +6,35 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Install Gitleaks & Scan
+      - name: Scan Git history with Gitleaks
         run: |
-          git clone https://github.com/gitleaks/gitleaks.git
-          cd gitleaks
-          make build
-          gitleaks git \
+          docker pull ghcr.io/gitleaks/gitleaks:latest
+
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks:latest \
+            git \
             --log-opts="--all" \
             --verbose \
             --redact \
             --report-format sarif \
-            --report-path results.sarif
+            --report-path results.sarif \
+            --exit-code 1
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
