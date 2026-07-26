@@ -485,6 +485,7 @@ jobs:
 
   sandbox-deployment:
     runs-on: ubuntu-latest
+    needs: sandbox-prep
     
     environment: ${{ 'SANDBOX' }}
     

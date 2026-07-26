@@ -475,6 +475,7 @@ jobs:
 
   release-creation:
     runs-on: ubuntu-latest
+    needs: release-prep
 
     environment: ${{ 'PRODUCTION' }}
     
@@ -530,6 +531,7 @@ jobs:
 
   production-deployment:
     runs-on: ubuntu-latest
+    needs: release-creation
     
     environment: ${{ 'PRODUCTION' }}
     
@@ -656,6 +658,7 @@ jobs:
 
   post-release-routine:
     runs-on: ubuntu-latest
+    needs: production-deployment
 
     steps:
       - uses: actions/checkout@v5
