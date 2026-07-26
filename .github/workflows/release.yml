@@ -23,21 +23,28 @@ jobs:
           distribution: corretto
           java-version: 17
 
+      - name: Install XML Tools
+        run: sudo apt-get install -y libxml2-utils
+
       - name: Convert Snapshot to Release
         run: |
+          echo "Replacing SNAPSHOT version with Release version in pom.xml..."
+          
           mvn versions:set \
             -DremoveSnapshot=true \
             -DgenerateBackupPoms=false
 
-      - name: Install XML Tools
-        run: sudo apt-get install -y libxml2-utils
+          echo "Release version set successfully in pom.xml"
 
       - name: Read Release Version
         id: releaseVersion
         shell: bash
         run: |
+          echo "Reading Release Version from pom.xml..."
+
           VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
 
+          # Store the version in GitHub Actions environment variable and output variable
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -58,18 +65,22 @@ jobs:
       - name: Create Git Tag
         shell: bash
         run: |
+          echo "Creating Git Tag for Release Version..."
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
 
+          echo "Git Tag v${VERSION} created and pushed successfully"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.VERSION }}
           name: Release v${{ env.VERSION }}
-          generate_release_notes: true
+          generate_release_notes: true # It will automatically generated rlease notes based on the commits since the last release
           files: |
             target/*.jar
         env:
@@ -77,6 +88,8 @@ jobs:
 
       - name: Increment to Next Snapshot
         run: |
+          echo "Incrementing to Next Snapshot Version..."
+
           VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
 
           VERSION=${VERSION%-SNAPSHOT}
@@ -88,12 +101,16 @@ jobs:
           NEXT_VERSION="${MAJOR}.${MINOR}.${PATCH}-SNAPSHOT"
 
           mvn versions:set \
-              -DnewVersion="$NEXT_VERSION" \
-              -DgenerateBackupPoms=false
+            -DnewVersion="$NEXT_VERSION" \
+            -DgenerateBackupPoms=false
+
+          echo "Next Snapshot Version set to $NEXT_VERSION in pom.xml"
 
       - name: Commit Next Snapshot
         shell: bash
         run: |
+          echo "Committing Next Snapshot Version..."
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
@@ -106,3 +123,38 @@ jobs:
 
           git commit -m "Prepare next development iteration"
           git push
+
+          echo "Next Snapshot Version committed and pushed successfully"
+
+      - name: Create Sync PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for existing open Sync PR from master to develop..."
+
+          EXISTING_PR=$(gh pr list \
+            --base develop \
+            --head master \
+            --state open \
+            --json number \
+            --jq 'length')
+
+          if [ "$EXISTING_PR" -eq 0 ]; then
+
+            echo "Not found"
+            echo "Creating a new Sync PR..."
+
+            gh pr create \
+              --base develop \
+              --head master \
+              --title "sync w/ main" \
+              --body "Automatically created after release"
+                
+            echo "Sync PR created successfully"
+          
+          else
+          
+            echo "An open sync PR already exists"
+            echo "Skipping creation..."
+          
+          fi
