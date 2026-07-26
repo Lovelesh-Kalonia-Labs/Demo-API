@@ -1,0 +1,21 @@
+name: Security Scan
+on: [workflow_dispatch, push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Deep copy of all past commits and history
+
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Workflow Security
+        run: |
+          bash <(curl -s https://githubusercontent.com)
+          ./actionlint
