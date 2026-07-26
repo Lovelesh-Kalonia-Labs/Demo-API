@@ -6,19 +6,29 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Gitleaks Secret Scan
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_ARGS: --log-opts = "--all"
+      - name: Scan Git history with Gitleaks
+        run: |
+          docker pull ghcr.io/gitleaks/gitleaks:latest
+
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks:latest \
+            git \
+            --log-opts="--all" \
+            --verbose \
+            --redact \
+            --report-format sarif \
+            --report-path results.sarif \
+            --exit-code 1
