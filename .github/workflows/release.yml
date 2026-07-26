@@ -696,6 +696,8 @@ jobs:
             -DnewVersion="$NEXT_MULE_PROJECT_VERSION" \
             -DgenerateBackupPoms=false
 
+          echo "NEXT_MULE_PROJECT_VERSION=$NEXT_MULE_PROJECT_VERSION" >> "$GITHUB_ENV"
+
           echo "Next Snapshot Version set to $NEXT_MULE_PROJECT_VERSION in pom.xml"
 
       - name: Commit Next Snapshot
@@ -713,7 +715,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Prepare next development iteration"
+          git commit -m "Prepare for ${NEXT_MULE_PROJECT_VERSION} development [skip ci]"
           git push
 
           echo "Next Snapshot Version committed and pushed successfully"
