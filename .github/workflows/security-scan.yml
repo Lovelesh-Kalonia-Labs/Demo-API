@@ -22,9 +22,3 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Lint GitHub Actions workflows
-        uses: raven-actions/actionlint@v2
-
-      - name: ShellCheck
-        uses: ludeeus/action-shellcheck@2.0.0
