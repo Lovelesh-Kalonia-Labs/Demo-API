@@ -14,6 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     
     environment: ${{ 'PRODUCTION' }}
+
+    outputs:
+      ENVIRONMENT: ${{ steps.select-env.outputs.ENVIRONMENT }}
+      ORG_ID: ${{ steps.read-metadata.outputs.ORG_ID }}
+      MULE_PROJECT_ARTIFACT_ID: ${{ steps.read-metadata.outputs.MULE_PROJECT_ARTIFACT_ID }}
+      MULE_PROJECT_VERSION: ${{ steps.read-metadata.outputs.MULE_PROJECT_VERSION }}
+      API_MANAGER_ENABLED: ${{ steps.create-update-api.outputs.API_MANAGER_ENABLED }}
+      API_INSTANCE_ID: ${{ steps.create-update-api.outputs.API_INSTANCE_ID }}
     
     steps:
       - uses: actions/checkout@v5
@@ -43,6 +51,7 @@ jobs:
           echo "Release version set successfully in pom.xml"
 
       - name: Select Environment Configuration
+        id: select-env
         run: |
           echo "Selecting Environment Configuration..."
 
@@ -74,6 +83,7 @@ jobs:
           echo "Status : OK"
 
       - name: Read Project Metadata
+        id: read-metadata
         run: |
           echo "Reading pom.xml..."
 
@@ -102,6 +112,7 @@ jobs:
           echo "Project metadata loaded successfully"
 
       - name: Create/Update API Manager Instance
+        id: create-update-api
         run: |
           echo "Reading $CONFIG_FILE..."
 
@@ -478,6 +489,9 @@ jobs:
     needs: release-prep
 
     environment: ${{ 'PRODUCTION' }}
+
+    env:
+      MULE_PROJECT_VERSION: ${{ needs.release-prep.outputs.MULE_PROJECT_VERSION }}
     
     steps:
       - uses: actions/checkout@v5
@@ -528,9 +542,17 @@ jobs:
 
   production-deployment:
     runs-on: ubuntu-latest
-    needs: release-creation
+    needs: [release-prep, release-creation]
     
     environment: ${{ 'PRODUCTION' }}
+
+    env:
+      ENVIRONMENT: ${{ needs.release-prep.outputs.ENVIRONMENT }}
+      ORG_ID: ${{ needs.release-prep.outputs.ORG_ID }}
+      MULE_PROJECT_ARTIFACT_ID: ${{ needs.release-prep.outputs.MULE_PROJECT_ARTIFACT_ID }}
+      MULE_PROJECT_VERSION: ${{ needs.release-prep.outputs.MULE_PROJECT_VERSION }}
+      API_MANAGER_ENABLED: ${{ needs.release-prep.outputs.API_MANAGER_ENABLED }}
+      API_INSTANCE_ID: ${{ needs.release-prep.outputs.API_INSTANCE_ID }}
     
     steps:
       - uses: actions/checkout@v5
@@ -652,7 +674,10 @@ jobs:
 
   post-release-routine:
     runs-on: ubuntu-latest
-    needs: production-deployment
+    needs: [release-prep, production-deployment]
+
+    env:
+      MULE_PROJECT_VERSION: ${{ needs.release-prep.outputs.MULE_PROJECT_VERSION }}
 
     steps:
       - uses: actions/checkout@v5
