@@ -703,6 +703,8 @@ jobs:
 
       - name: Commit Next Snapshot
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.PAT_FOR_CICD }} # Personal Access Token stored as Repository Secret; Only used for this commit step due to main branch protection rules; The ruleset is configured to be bypassed by Repository admin role;
         run: |
           echo "Committing Next Snapshot Version..."
 
@@ -717,7 +719,10 @@ jobs:
           fi
 
           git commit -m "Prepare for ${NEXT_MULE_PROJECT_VERSION} development [skip ci]"
-          git push
+          
+          gh auth setup-git
+          
+          git push origin main
 
           echo "Next Snapshot Version committed and pushed successfully"
 
@@ -742,7 +747,7 @@ jobs:
             gh pr create \
               --base develop \
               --head main \
-              --title "sync w/ main" \
+              --title "sync w/ main [skip ci]" \
               --body "Automatically created after release"
                 
             echo "Sync PR created successfully"
