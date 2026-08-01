@@ -681,6 +681,13 @@ jobs:
           distribution: corretto
           java-version: 17
 
+      - name: Generate GitHub App Token
+        id: fetch-bypass-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Increment to Next Snapshot
         run: |
           echo "Incrementing to Next Snapshot Version..."
@@ -704,12 +711,14 @@ jobs:
       - name: Commit Next Snapshot
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.PAT_FOR_CICD }} # Personal Access Token stored as Repository Secret; Only used for this commit step due to main branch protection rules; The ruleset is configured to be bypassed by Repository admin role;
+          GH_TOKEN: ${{ steps.fetch-bypass-token.outputs.token }} # GitHub App Token generated above; Only used for this commit step due to main branch protection rules; The ruleset is configured to be bypassed by GitHub;
         run: |
           echo "Committing Next Snapshot Version..."
 
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config --local user.name "${{ steps.fetch-bypass-token.outputs.app-slug }}[bot]"
+          git config --local user.email "${{ steps.fetch-bypass-token.outputs.bot-user-id }}+${{ steps.fetch-bypass-token.outputs.app-slug }}[bot]@://github.com"
+
+          gh auth setup-git
 
           git add pom.xml
 
@@ -719,8 +728,6 @@ jobs:
           fi
 
           git commit -m "Prepare for ${NEXT_MULE_PROJECT_VERSION} development [skip ci]"
-          
-          gh auth setup-git
           
           git push origin main
 
