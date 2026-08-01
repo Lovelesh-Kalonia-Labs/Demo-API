@@ -3,6 +3,7 @@ name: MuleSoft Deployment - SANDBOX
 on:
   push:
     branches:
+      - workflow_dispatch:
       - develop
 
 jobs:
