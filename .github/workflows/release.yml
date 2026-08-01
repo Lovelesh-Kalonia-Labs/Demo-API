@@ -1,9 +1,9 @@
 name: MuleSoft Release & Deployment - PRODUCTION
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - workflow_dispatch:
       - main # find and replace 'main' with 'master' in this entire script, if your default branch is named 'master'
 
 permissions:
