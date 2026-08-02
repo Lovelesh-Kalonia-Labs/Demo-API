@@ -685,7 +685,7 @@ jobs:
         id: fetch-bypass-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.APP_CLIENT_ID }}
+          client-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Increment to Next Snapshot
@@ -708,30 +708,69 @@ jobs:
 
           echo "Next Snapshot Version set to $NEXT_MULE_PROJECT_VERSION in pom.xml"
 
-      - name: Commit Next Snapshot
+      - name: Commit Next Snapshot via Pull Request
         shell: bash
         env:
-          GH_TOKEN: ${{ steps.fetch-bypass-token.outputs.token }} # GitHub App Token generated above; Only used for this commit step due to main branch protection rules; The ruleset is configured to be bypassed by GitHub;
+          GH_TOKEN: ${{ steps.fetch-bypass-token.outputs.token }}
         run: |
-          echo "Committing Next Snapshot Version..."
+          set -euo pipefail
+
+          echo "Preparing Next Snapshot Version..."
 
           git config --local user.name "${{ steps.fetch-bypass-token.outputs.app-slug }}[bot]"
-          git config --local user.email "${{ steps.fetch-bypass-token.outputs.bot-user-id }}+${{ steps.fetch-bypass-token.outputs.app-slug }}[bot]@://github.com"
+          git config --local user.email "${{ steps.fetch-bypass-token.outputs.bot-user-id }}+${{ steps.fetch-bypass-token.outputs.app-slug }}[bot]@users.noreply.github.com"
 
           gh auth setup-git
+
+          BRANCH="snapshot-update-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          git checkout -b "$BRANCH"
 
           git add pom.xml
 
           if git diff --cached --quiet; then
-            echo "Nothing to commit."
+            echo "Nothing to commit"
             exit 0
           fi
 
           git commit -m "Prepare for ${NEXT_MULE_PROJECT_VERSION} development [skip ci]"
-          
-          git push origin main
 
-          echo "Next Snapshot Version committed and pushed successfully"
+          git push --set-upstream origin "$BRANCH"
+
+          echo "Creating Pull Request..."
+
+          PR_URL=$(
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "Prepare for ${NEXT_MULE_PROJECT_VERSION} development [skip ci]" \
+              --body "Automated snapshot version update"
+          )
+
+          echo "PR: $PR_URL"
+          echo "Approving Pull Request..."
+
+          gh pr review "$PR_URL" \
+            --approve
+
+          echo "Pull Request approved successfully"          
+
+          echo "Attempting to merge..."
+
+          gh pr merge "$PR_URL" \
+            --merge \
+            --delete-branch
+          
+          sleep 5
+
+          MERGED=$(gh pr view "$PR_URL" --json merged --jq '.merged')
+
+          if [[ "$MERGED" == "true" ]]; then
+            echo "Pull Request merged successfully"
+          else
+            STATE=$(gh pr view "$PR_URL" --json state --jq '.state')
+            echo "Pull Request is not merged yet, Manual intervention may be required. Current state: $STATE"
+          fi
 
       - name: Create Sync PR
         env:
