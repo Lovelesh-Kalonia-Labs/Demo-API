@@ -681,15 +681,9 @@ jobs:
           distribution: corretto
           java-version: 17
 
-      - name: Generate GitHub App Token
-        id: fetch-bypass-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ secrets.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - name: Increment to Next Snapshot
         run: |
+
           echo "Incrementing to Next Snapshot Version..."
 
           MULE_PROJECT_VERSION=${MULE_PROJECT_VERSION%-SNAPSHOT}
@@ -708,18 +702,17 @@ jobs:
 
           echo "Next Snapshot Version set to $NEXT_MULE_PROJECT_VERSION in pom.xml"
 
-      - name: Commit Next Snapshot via Pull Request
+      - name: Commit Next Snapshot Version and Create PR
         shell: bash
         env:
-          GH_TOKEN: ${{ steps.fetch-bypass-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
         run: |
-          set -euo pipefail
 
           echo "Preparing Next Snapshot Version..."
 
-          git config --local user.name "${{ steps.fetch-bypass-token.outputs.app-slug }}[bot]"
-          git config --local user.email "${{ steps.fetch-bypass-token.outputs.bot-user-id }}+${{ steps.fetch-bypass-token.outputs.app-slug }}[bot]@users.noreply.github.com"
-
+          git config --local user.name "lovelesh-automation-bot"
+          git config --local user.email "lovelesh-automation-bot@users.noreply.github.com"
+          
           gh auth setup-git
 
           BRANCH="snapshot-update-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -748,12 +741,27 @@ jobs:
           )
 
           echo "PR: $PR_URL"
+
+          echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
+
+      - name: Approve PR
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.REVIEWER_PAT }}
+        run: |
+
           echo "Approving Pull Request..."
 
           gh pr review "$PR_URL" \
             --approve
 
-          echo "Pull Request approved successfully"          
+          echo "Pull Request approved successfully"
+
+      - name: Merge PR
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
+        run: |
 
           echo "Attempting to merge..."
 
@@ -766,13 +774,17 @@ jobs:
           MERGED=$(gh pr view "$PR_URL" --json merged --jq '.merged')
 
           if [[ "$MERGED" == "true" ]]; then
+
             echo "Pull Request merged successfully"
+
           else
+
             STATE=$(gh pr view "$PR_URL" --json state --jq '.state')
             echo "Pull Request is not merged yet, Manual intervention may be required. Current state: $STATE"
+
           fi
 
-      - name: Create Sync PR
+      - name: Create PR to Sync main to develop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
