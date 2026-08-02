@@ -8,7 +8,7 @@ This template relies on GitHub Actions secrets and repository variables.
 
 ### GitHub Actions environment secrets
 
-For each environment, SANDBOX and PRODUCTION, configure corresponding secrets in GitHub Actions:
+There are two environments created in GitHub. For each environment, **SANDBOX** and **PRODUCTION**, configure corresponding secrets in GitHub Actions:
 
 - `CONNECTED_APP_ID`
 - `CONNECTED_APP_SECRET`
@@ -29,6 +29,13 @@ Set the following repository variables in GitHub Actions:
 - `CH_TARGET`: cloudhub-us-east-2
 - `CH_VCORES`: 0.1
 
+### GitHub Actions repository secrets
+
+- `AUTOMATION_PAT`
+- `REVIEWER_PAT`
+
+More information on these under **Authentication** heading below.
+
 ## Workflows
 
 This repository includes three GitHub Actions workflow files in `.github/workflows`:
@@ -43,7 +50,7 @@ The sandbox workflow deploys the application to the SANDBOX environment only. It
 
 ### release.yml
 
-> **Note:** This project assumes the main branch is named `main`, not `master`. Ensure you change this workflow .yml file accordingly.
+> **Note:** This project assumes the main branch is named `main`, not `master`. Ensure you change this .yml file accordingly.
 
 The release workflow deploys the application to the PRODUCTION environment only. It uses production-specific credentials and is separated from sandbox deployment to ensure controlled release handling.
 
@@ -55,7 +62,26 @@ The security scan workflow scans the repository to detect whether any secrets we
 
 Branch protection is enabled on the `main` branch. A pull request with at least one reviewer is required before code can be merged.
 
-To prevent unauthorized production deployments, a deployment protection rule is configured to require reviewer approval before the release workflow can be started.
+To prevent unauthorized production deployments, a deployment protection rule is configured on **PRODUCTION** environment in GitHub to require reviewer approval before the release workflow's **release-prep** and **release-and-deploy** jobs can be started.
+
+## Authentication
+
+This repository belongs to an **organization** account with two members. This is because the main branch protection rule prevents PR merges without approval, and default GitHub rules do not allow self-approval of PRs. To support the release workflow, both users have fine-grained Personal Access Tokens set up and stored as repository secrets:
+
+- `AUTOMATION_PAT`
+- `REVIEWER_PAT`
+
+Both users have been assigned an organization role of at least Maintainer. These PATs will have to be approved under organization settings before use.
+
+`AUTOMATION_PAT` Token Permissions:
+
+- Read access to metadata
+- Read and Write access to actions, code, and pull requests
+
+`REVIEWER_PAT` Token Permissions:
+
+- Read access to metadata
+- Read and Write access to pull requests
 
 ## MuleSoft Platform Configuration
 
