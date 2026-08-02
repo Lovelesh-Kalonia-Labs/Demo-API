@@ -774,7 +774,7 @@ jobs:
 
       - name: Create PR - Sync main to develop
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
         run: |
           echo "Checking for existing open Sync PR from main to develop..."
 
