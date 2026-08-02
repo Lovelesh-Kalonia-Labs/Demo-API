@@ -708,7 +708,7 @@ jobs:
           GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
         run: |
 
-          echo "Preparing Next Snapshot Version..."
+          echo "Preparing to commit Next Snapshot Version..."
 
           git config --local user.name "lovelesh-automation-bot"
           git config --local user.email "lovelesh-automation-bot@users.noreply.github.com"
@@ -730,21 +730,22 @@ jobs:
 
           git push --set-upstream origin "$BRANCH"
 
+          echo "Committed and Pushed to branch : $BRANCH"s
           echo "Creating Pull Request..."
 
           PR_URL=$(
             gh pr create \
               --base main \
               --head "$BRANCH" \
-              --title "Prepare for ${NEXT_MULE_PROJECT_VERSION} development [skip ci]" \
-              --body "Automated snapshot version update"
+              --title "Prepare for next development [skip ci]" \
+              --body "Automated snapshot version update - ${NEXT_MULE_PROJECT_VERSION}"
           )
 
-          echo "PR: $PR_URL"
+          echo "Pull Request URL : $PR_URL"
 
           echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
 
-      - name: Approve PR
+      - name: Approve PR - Next Snapshot Version
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.REVIEWER_PAT }}
@@ -757,7 +758,7 @@ jobs:
 
           echo "Pull Request approved successfully"
 
-      - name: Merge PR
+      - name: Merge PR - Next Snapshot Version
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
@@ -768,23 +769,10 @@ jobs:
           gh pr merge "$PR_URL" \
             --merge \
             --delete-branch
-          
-          sleep 5
 
-          MERGED=$(gh pr view "$PR_URL" --json merged --jq '.merged')
+          echo "Pull Request merged successfully"
 
-          if [[ "$MERGED" == "true" ]]; then
-
-            echo "Pull Request merged successfully"
-
-          else
-
-            STATE=$(gh pr view "$PR_URL" --json state --jq '.state')
-            echo "Pull Request is not merged yet, Manual intervention may be required. Current state: $STATE"
-
-          fi
-
-      - name: Create PR to Sync main to develop
+      - name: Create PR - Sync main to develop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
