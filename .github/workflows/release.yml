@@ -51,10 +51,10 @@ jobs:
 
           echo "Release version set successfully in pom.xml"
 
-      - name: Select Environment Configuration
+      - name: Select Anypoint Platform Environment & Configuration
         id: select-env
         run: |
-          echo "Selecting Environment Configuration..."
+          echo "Selecting Anypoint Platform Environment & Configuration..."
 
           # Store the environment and config file in GitHub Actions environment variables for later use
           echo "ENVIRONMENT=PRODUCTION" >> $GITHUB_ENV
@@ -65,7 +65,7 @@ jobs:
 
           echo "Configuration selected successfully"
 
-      - name: Display Selected Environment Configuration
+      - name: Display Selected Anypoint Platform Environment & Environment Configuration
         run: |
           echo "Environment : $ENVIRONMENT"
           echo "Config File : $CONFIG_FILE"
